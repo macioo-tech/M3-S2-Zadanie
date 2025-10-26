@@ -1,0 +1,24 @@
+# Zależności
+/node_modules
+/npm-debug.log*
+/yarn-error.log*
+/pnpm-debug.log*
+
+# Wyniki kompilacji/transpilacji
+/dist
+/build
+/out
+/coverage
+
+# Środowisko uruchomieniowe
+/.env
+/.env.*
+/config/local.json
+
+# Pliki z IDE/systemu
+.vscode
+.idea
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
