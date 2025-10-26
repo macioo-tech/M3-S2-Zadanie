@@ -1,0 +1,23 @@
+{
+  "name": "m3-s2-zadanie",
+  "version": "1.0.0",
+  "description": "## Opis Projekt umożliwia rejestrację, logowanie, zarządzanie użytkownikami i samochodami oraz symulację zakupu samochodów.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/macioo-tech/M3-S2-Zadanie.git"
+  },
+  "author": "MacioO",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/macioo-tech/M3-S2-Zadanie/issues"
+  },
+  "homepage": "https://github.com/macioo-tech/M3-S2-Zadanie#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
