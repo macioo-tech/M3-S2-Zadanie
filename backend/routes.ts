@@ -1,78 +1,56 @@
-// import db from 'db'
-
-// routes
-
-// /login
-
-// get user
-// await db.get('user', id)
-
-
 import {IncomingMessage, ServerResponse} from "node:http";
+import * as db from "./db.js";
 
-export function routesHandler (req: IncomingMessage, res: ServerResponse) : void {
-    const {method, url} = req;
-
-    if (url === undefined) {
-        // TODO Error Handling
-        return;
+// GET handler
+async function handleGet(req: IncomingMessage, res: ServerResponse) {
+    const url = new URL(req.url!, `http://${req.headers.host}`)
+    const urlParts : string[] = url.pathname.split("/").filter(Boolean);
+    if (urlParts.length === 1) {
+        if (urlParts[0] === 'users') {
+            res.end(JSON.stringify(await db.read(urlParts[0])))
+            console.log(JSON.stringify(await db.read(urlParts[0])))
+        } else if (urlParts[0] === 'cars') {
+            res.end(JSON.stringify(await db.read(urlParts[0])))
+            console.log(JSON.stringify(await db.read(urlParts[0])))
+        }
+    } else if (urlParts.length === 2) {
+        if (urlParts[0] === 'users') {
+            res.end(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
+            console.log(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
+        } else if (urlParts[0] === 'cars') {
+            res.end(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
+            console.log(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
+        }
     }
+}
 
-    if (url.startsWith("/users")) {
-        const parts = url.split("/");
-        const id = parts[2]
-        if (method === "GET") {
-            // TODO Read Users
-            // return readUsers(req, res, id)
-            // await db.read('user', id)
-            return;
-        }
-        if (method === "POST") {
-            // TODO Create User
-            // return createUsers(req,res)
-            // await db.create('user')
-            return;
-        }
-        if (method === "PUT") {
-            // TODO Update User
-            // return updateUser(req,res,id)
-            // await db.update('user', id)
-            return;
-        }
-        if (method === "DELETE") {
-            // TODO Delete User
-            // return deleteUser(req,res,id)
-            // await db.delete('user', id)
-            return;
-        }
+// TODO POST handler
+async function handlePost(req: IncomingMessage, res: ServerResponse) {
 
-        if (url.startsWith("/cars")) {
-            const parts = url.split("/");
-            const id = parts[2]
-            if (method === "GET") {
-                // TODO Read Car
-                // return readUsers(req, res, id)
-                // await db.read('car', id)
-                return;
-            }
-            if (method === "POST") {
-                // TODO Create Car
-                // return createUsers(req,res)
-                // await db.create('car')
-                return;
-            }
-            if (method === "PUT") {
-                // TODO Update Car
-                // return updateUser(req,res,id)
-                // await db.update('car', id)
-                return;
-            }
-            if (method === "DELETE") {
-                // TODO Delete Car
-                // return deleteUser(req,res,id)
-                // await db.delete('car', id)
-                return;
-            }
-        }
+}
+// TODO Delete Handler
+async function handleDelete(req: IncomingMessage, res: ServerResponse) {
+
+}
+// TODO Update Handler
+async function handleUpdate(req: IncomingMessage, res: ServerResponse) {
+
+}
+
+// Main server router handler
+export async function router(req: IncomingMessage, res: ServerResponse) {
+    const method = req.method;
+
+    if (method === 'GET') {
+        await handleGet(req, res);
+    } else if (method === 'POST') {
+        await handlePost(req, res);
+    } else if (method === 'DELETE') {
+        await handleDelete(req, res);
+    } else if (method === 'UPDATE') {
+        await handleUpdate(req, res);
+    } else {
+        res.writeHead(500, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({error: `Method ${method} does not exist`}));
     }
 }

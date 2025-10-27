@@ -1,23 +1,22 @@
-import {IncomingMessage, ServerResponse} from "node:http";
-import { createServer } from 'http';
-import {routesHandler} from "./routes.js";
+import * as http from 'http'
+import {router} from "./routes.js";
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 5050;
 
-const logger = (req : IncomingMessage, res : ServerResponse, next : Function) : void => {
-    console.log(`${req.method} ${req.url}`)
+const logger = (req : http.IncomingMessage, res : http.ServerResponse, next : Function) : void => {
+    console.log(`Server request ${req.method} ${req.url}`)
     next();
 }
 
-const jsonMiddleware = (req : IncomingMessage, res : ServerResponse, next : Function) : void => {
+const jsonMiddleware = (req : http.IncomingMessage, res : http.ServerResponse, next : Function) : void => {
     res.setHeader('Content-Type', 'application/json')
     next();
 }
 
-const server = createServer(async (req, res) => {
-  jsonMiddleware(req, res,() => {
-      logger(req, res, () => {
-          routesHandler(req, res);
+const server = http.createServer(async (req, res) => {
+  jsonMiddleware(req, res, async () => {
+      logger(req, res, async () => {
+          await router(req, res)
       })
   })
 });

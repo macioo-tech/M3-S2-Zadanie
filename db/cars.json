@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "id": "audi1",
+    "model": "audi a4",
+    "price": 40000,
+    "ownerId": "maciej"
+  }
+]

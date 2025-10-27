@@ -12,4 +12,8 @@ export interface User {
     price: number;
     ownerId: string;
   }
+
+  export interface ApiError {
+    error: string;
+  }
   
