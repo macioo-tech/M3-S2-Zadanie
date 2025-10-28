@@ -5,23 +5,16 @@ import * as db from "./db.js";
 async function handleGet(req: IncomingMessage, res: ServerResponse) {
     const url = new URL(req.url!, `http://${req.headers.host}`)
     const urlParts : string[] = url.pathname.split("/").filter(Boolean);
+    let data = JSON.stringify({error: "Server Error"})
     if (urlParts.length === 1) {
-        if (urlParts[0] === 'users') {
-            res.end(JSON.stringify(await db.read(urlParts[0])))
-            console.log(JSON.stringify(await db.read(urlParts[0])))
-        } else if (urlParts[0] === 'cars') {
-            res.end(JSON.stringify(await db.read(urlParts[0])))
-            console.log(JSON.stringify(await db.read(urlParts[0])))
-        }
+        data = JSON.stringify(await db.read(urlParts[0]));
     } else if (urlParts.length === 2) {
-        if (urlParts[0] === 'users') {
-            res.end(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
-            console.log(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
-        } else if (urlParts[0] === 'cars') {
-            res.end(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
-            console.log(JSON.stringify(await db.read(urlParts[0], urlParts[1])))
-        }
+        data = JSON.stringify(await db.read(urlParts[0], urlParts[1]));
+    } else {
+        res.writeHead(500)
     }
+    res.end(data);
+    console.log(data);
 }
 
 // TODO POST handler
