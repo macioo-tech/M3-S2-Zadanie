@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 
+
 function getMimeType(filePath: string): string {
     const ext = path.extname(filePath).toLowerCase();
     switch (ext) {
@@ -20,29 +21,29 @@ function getMimeType(filePath: string): string {
 }
 
 // Serve static files handler
-export async function serveStaticFile(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
-    const url = req.url || '/';
-    const cleanPath = url === '/' ? '/index.html' : url;
-    const filePath = path.join(FRONTEND_DIR, cleanPath);
-
-    if (!filePath.startsWith(FRONTEND_DIR)) {
-        return false;
-    }
-
-    try {
-        const stats = await fs.stat(filePath);
-
-        if (stats.isFile()) {
-            const fileStream = await fs.readFile(filePath);
-            res.writeHead(200, { 'Content-Type': getMimeType(filePath) }).end(fileStream);
-            return true;
-        }
-    } catch (e) {
-        //res.writeHead(404, { 'Content-Type': getMimeType(filePath) }).end("File Not Found");
-    }
-
-    return false;
-}
+// export async function serveStaticFile(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+//     // const url = req.url || '/';
+//     // const cleanPath = url === '/' ? '/index.html' : url;
+//     // const filePath = path.join(FRONTEND_DIR, cleanPath);
+//     //
+//     // if (!filePath.startsWith(FRONTEND_DIR)) {
+//     //     return false;
+//     // }
+//     //
+//     // try {
+//     //     const stats = await fs.stat(filePath);
+//     //
+//     //     if (stats.isFile()) {
+//     //         const fileStream = await fs.readFile(filePath);
+//     //         res.writeHead(200, { 'Content-Type': getMimeType(filePath) }).end(fileStream);
+//     //         return true;
+//     //     }
+//     // } catch (e) {
+//     //     //res.writeHead(404, { 'Content-Type': getMimeType(filePath) }).end("File Not Found");
+//     // }
+//     //
+//     // return false;
+// }
 
 // Main server API router handler
 export async function router(req: IncomingMessage, res: ServerResponse) {
@@ -52,23 +53,25 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
     let data = ''//JSON.stringify([]);
 
     try {
-        // TODO / /index.html static files implementation
-        // if (method === "GET" && (reqPath === null || reqPath === "index.html")) {
-        //     console.log(path.join(".", "frontend", "index.html"));
-        //     data = JSON.stringify(await fs.readFile(path.join(".", "frontend", "index.html")));
-        //     res.writeHead(200, {"Content-Type": "text/html"}).end(data);
-        //     return;
-        // } else if (method === "GET" && reqPath === "style.css") {
-        //     console.log(path.join(".", "frontend", "style.css"));
-        //     data = JSON.stringify(await fs.readFile(path.join(".", "frontend", "style.css")));
-        //     res.writeHead(200, {"Content-Type": "text/css"}).end(data);
-        //     return;
-        // } else if (method === "GET" && reqPath === "main.js") {
-        //     console.log(path.join(".", "frontend", "main.js"));
-        //     data = JSON.stringify(await fs.readFile(path.join(".", "frontend", "main.js")));
-        //     res.writeHead(200, {"Content-Type": "text/javascript"}).end(data);
-        //     return;
-        // }
+        // static files implementation
+        if(reqPath === null || reqPath === 'index.html' || reqPath === 'style.css' || reqPath === 'main.js') {
+            const filePath = path.join(FRONTEND_DIR, url.pathname);
+            if (!filePath.startsWith(FRONTEND_DIR)) {
+                return;
+            }
+            try {
+                const stats = await fs.stat(filePath);
+                if (stats.isFile()) {
+                    const fileStream = await fs.readFile(filePath);
+                    res.writeHead(200, { 'Content-Type': getMimeType(filePath) }).end(fileStream);
+                    return true;
+                }
+            } catch (e) {
+                res.writeHead(404, { 'Content-Type': getMimeType(filePath) }).end("File Not Found");
+                return;
+            }
+            return;
+        }
 
         // /users /cars Api implementation
         if(reqPath === 'users' || reqPath === 'cars') {
