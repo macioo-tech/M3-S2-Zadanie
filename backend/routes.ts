@@ -3,6 +3,7 @@ import fs from "node:fs/promises"
 import path from "node:path";
 import * as db from "./db.js";
 import {fileURLToPath} from "node:url";
+import {ApiError, User} from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,13 +91,24 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 data += chunk;
             })
             req.on('end', async () => {
-                console.log(data)
-                //await db.Create(reqPath, JSON.parse(data.toString()));
-                //res.writeHead(201).end(data);
+                try{
+                    const {username, password} = JSON.parse(data.toString());
+                    if(!username || !password) {
+                        res.writeHead(400).end({error: "Incorrect username or password"});
+                        return;
+                    }
+                    const users : User[] = await db.Read('users') as User[];
+                    const user = users.find((u) => u.username === username && u.password === password);
+                    if(user) {
+                        res.writeHead(200).end(JSON.stringify('Login Ok'))
+                    } else {
+                        res.writeHead(400).end(JSON.stringify('Login Failed'))
+                    }
+                } catch (e) {
+                    res.writeHead(400).end(JSON.stringify('Login Failed'))
+                }
             })
             return;
-
-
         }
 
         // TODO /sse Api implementation
