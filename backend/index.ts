@@ -16,7 +16,6 @@ const jsonMiddleware = (req : http.IncomingMessage, res : http.ServerResponse, n
 const server = http.createServer(async (req, res) => {
   jsonMiddleware(req, res, async () => {
       logger(req, res, async () => {
-
           await router(req, res)
       })
   })
