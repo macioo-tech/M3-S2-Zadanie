@@ -14,6 +14,7 @@ export interface User {
   }
 
   export interface ApiError {
+    code: number;
     error: string;
   }
   

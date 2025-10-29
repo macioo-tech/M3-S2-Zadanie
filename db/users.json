@@ -1,9 +1,44 @@
 [
-    {
-      "id": "admin001",
-      "username": "admin",
-      "password": "admin123",
-      "role": "admin",
-      "balance": 10000
-    }
-  ]
+  {
+    "id": "admin001",
+    "username": "admin",
+    "password": "admin123",
+    "role": "admin",
+    "balance": 10000
+  },
+  {
+    "id": "car002",
+    "username": "admin2",
+    "password": "admin123",
+    "role": "admin",
+    "balance": 60000
+  },
+  {
+    "id": "car003",
+    "username": "admin3",
+    "password": "admin123",
+    "role": "admin",
+    "balance": 30000
+  },
+  {
+    "id": "c_0a65f38a",
+    "username": "admin5",
+    "password": "admin1234",
+    "role": "admin",
+    "balance": 60000
+  },
+  {
+    "id": "c_82dc425f",
+    "username": "admin6",
+    "password": "admin1234",
+    "role": "admin",
+    "balance": 60000
+  },
+  {
+    "id": "new1",
+    "username": "admin6",
+    "password": "admin1234",
+    "role": "admin",
+    "balance": 60000
+  }
+]

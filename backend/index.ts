@@ -1,5 +1,5 @@
 import * as http from 'http'
-import {router} from "./routes.js";
+import {router, serveStaticFile} from "./routes.js";
 
 const PORT = process.env.PORT || 5050;
 
@@ -16,6 +16,12 @@ const jsonMiddleware = (req : http.IncomingMessage, res : http.ServerResponse, n
 const server = http.createServer(async (req, res) => {
   jsonMiddleware(req, res, async () => {
       logger(req, res, async () => {
+
+          const isStatic = await serveStaticFile(req, res);
+
+          if (isStatic) {
+              return;
+          }
           await router(req, res)
       })
   })
