@@ -1,7 +1,8 @@
 import * as http from 'http'
 import {router} from "./routes.js";
+import path from "node:path";
 
-const PORT = process.env.PORT || 5050;
+const PORT = process.env.PORT || 3000;
 
 const logger = (req : http.IncomingMessage, res : http.ServerResponse, next : Function) : void => {
     console.log(`Server request ${req.method} ${req.url}`)
@@ -9,7 +10,17 @@ const logger = (req : http.IncomingMessage, res : http.ServerResponse, next : Fu
 }
 
 const jsonMiddleware = (req : http.IncomingMessage, res : http.ServerResponse, next : Function) : void => {
-    res.setHeader('Content-Type', 'application/json')
+    const url = new URL(req.url!, `http://${req.headers.host}`)
+    const [reqPath] = url.pathname.split("/").filter(Boolean);
+    let appType : string = 'application/json';
+    switch (path.extname(reqPath === undefined ? '/index.html' : reqPath).toLowerCase()) {
+        case '.html': appType = 'text/html'; break;
+        case '.css': appType = 'text/css'; break;
+        case '.js': appType = 'application/javascript'; break;
+        case '.json': appType = 'application/json'; break;
+        default: appType = 'text/event-stream';
+    }
+    res.setHeader('Content-Type', appType)
     next();
 }
 

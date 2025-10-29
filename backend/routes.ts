@@ -9,23 +9,23 @@ const __dirname = path.dirname(__filename);
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 
 
-function getMimeType(filePath: string): string {
-    const ext = path.extname(filePath).toLowerCase();
-    switch (ext) {
-        case '.html': return 'text/html';
-        case '.css': return 'text/css';
-        case '.js': return 'application/javascript';
-        case '.json': return 'application/json';
-        default: return 'text/plain';
-    }
-}
+// function getMimeType(filePath: string): string {
+//     const ext = path.extname(filePath).toLowerCase();
+//     switch (ext) {
+//         case '.html': return 'text/html';
+//         case '.css': return 'text/css';
+//         case '.js': return 'application/javascript';
+//         case '.json': return 'application/json';
+//         default: return 'text/plain';
+//     }
+// }
 
 // Main server API router handler
 export async function router(req: IncomingMessage, res: ServerResponse) {
     const method = req.method;
     const url = new URL(req.url!, `http://${req.headers.host}`)
     const [reqPath, reqId ] = url.pathname.split("/").filter(Boolean);
-    let data = ''//JSON.stringify([]);
+    let data = '';
 
     try {
         // static files implementation
@@ -38,11 +38,13 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 const stats = await fs.stat(filePath);
                 if (stats.isFile()) {
                     const fileStream = await fs.readFile(filePath);
-                    res.writeHead(200, { 'Content-Type': getMimeType(filePath) }).end(fileStream);
+                    //res.writeHead(200, { 'Content-Type': getMimeType(filePath) }).end(fileStream);
+                    res.writeHead(200).end(fileStream);
                     return true;
                 }
             } catch (e) {
-                res.writeHead(404, { 'Content-Type': getMimeType(filePath) }).end("File Not Found");
+                //res.writeHead(404, { 'Content-Type': getMimeType(filePath) }).end("File Not Found");
+                res.writeHead(404).end("File Not Found");
                 return;
             }
             return;
@@ -81,6 +83,28 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 return;
             }
         }
+
+        // TODO /login Api implementation
+        if(reqPath === 'login' && method === 'POST') {
+            req.on('data', (chunk) => {
+                data += chunk;
+            })
+            req.on('end', async () => {
+                console.log(data)
+                //await db.Create(reqPath, JSON.parse(data.toString()));
+                //res.writeHead(201).end(data);
+            })
+            return;
+
+
+        }
+
+        // TODO /sse Api implementation
+        if(reqPath === 'sse') {
+            res.writeHead(200).end('ok')
+            return
+        }
+
         res.writeHead(404, `Method ${method} /${reqPath} does not exist`).end();
 
     } catch (e) {
