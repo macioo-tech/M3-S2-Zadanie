@@ -1,20 +1,33 @@
-import fs from "fs/promises"
-import path from "path";
-import {ApiError} from "./types.js";
+import fs from "node:fs/promises"
+import path from "node:path";
 import {fileURLToPath} from "node:url";
+import {ApiError, Car, User} from "./types.js";
+import crypto from "node:crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_DIR = path.join(__dirname, '..', 'db');
 
+// Generate unique id in the data base file
+function genID<T>(type : 'users' | 'cars', users: T[]): string {
+    const id: string = `${type}${crypto.randomBytes(2).toString('hex')}`
+    console.log(id)
+    if(users.find(u => (u as any).id === id)) {
+        return genID(type, users);
+    }
+    return id;
+}
+
 //CRUD implementation
-//Create TODO - better types control and validation if id is already existing and id generation
+//Create
 export async function Create<T> (type : 'users' | 'cars', newItem: T) : Promise<T[]  | ApiError> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
     let data: T[] = [];
     //console.log(fileDB);
     try {
         data =  JSON.parse(await fs.readFile(fileDB, "utf8"));
+        newItem = { id :  genID(type,data), ...newItem} ;
+        console.log(newItem);
         data.push(newItem);
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
         return data;
@@ -44,7 +57,7 @@ export async function Read<T> (type : 'users' | 'cars', id? : string) : Promise<
     }
 }
 
-// Update TODO - better types control
+// Update
 export async function Update<T>(type : 'users' | 'cars', id: string, updatedItem : T) : Promise<T[] | ApiError> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
     let data: T[] = [];
@@ -67,7 +80,7 @@ export async function Update<T>(type : 'users' | 'cars', id: string, updatedItem
     }
 }
 
-// Delete TODO - better types control
+// Delete
 export async function Delete<T>(type : 'users' | 'cars', id: string) : Promise<T[] | ApiError> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
     let data: T[] = [];

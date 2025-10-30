@@ -13,6 +13,7 @@ const jsonMiddleware = (req : http.IncomingMessage, res : http.ServerResponse, n
     const url = new URL(req.url!, `http://${req.headers.host}`)
     const [reqPath] = url.pathname.split("/").filter(Boolean);
     let appType : string;
+    // TODO this still needs investigation
     switch (path.extname(reqPath === undefined ? '/index.html' : reqPath).toLowerCase()) {
         case '.html': appType = 'text/html'; break;
         case '.css': appType = 'text/css'; break;

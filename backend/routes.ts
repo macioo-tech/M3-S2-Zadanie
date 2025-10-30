@@ -1,25 +1,13 @@
 import {IncomingMessage, ServerResponse} from "node:http";
 import fs from "node:fs/promises"
 import path from "node:path";
-import * as db from "./db.js";
 import {fileURLToPath} from "node:url";
-import {ApiError, User} from "./types.js";
+import * as db from "./db.js";
+import {User, Car} from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
-
-
-// function getMimeType(filePath: string): string {
-//     const ext = path.extname(filePath).toLowerCase();
-//     switch (ext) {
-//         case '.html': return 'text/html';
-//         case '.css': return 'text/css';
-//         case '.js': return 'application/javascript';
-//         case '.json': return 'application/json';
-//         default: return 'text/plain';
-//     }
-// }
 
 // Main server API router handler
 export async function router(req: IncomingMessage, res: ServerResponse) {
@@ -85,7 +73,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             }
         }
 
-        // TODO /login Api implementation
+        //  /login Api implementation
         if(reqPath === 'login' && method === 'POST') {
             req.on('data', (chunk) => {
                 data += chunk;
@@ -94,7 +82,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 try{
                     const {username, password} = JSON.parse(data.toString());
                     if(!username || !password) {
-                        res.writeHead(400).end({error: "Incorrect username or password"});
+                        res.writeHead(400).end(JSON.stringify('Login Failed'));
                         return;
                     }
                     const users : User[] = await db.Read('users') as User[];
@@ -110,6 +98,33 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             })
             return;
         }
+
+        //  /register Api implementation
+        if(reqPath === 'register' && method === 'POST') {
+            req.on('data', (chunk) => {
+                data += chunk;
+            })
+            req.on('end', async () => {
+                try {
+                    const {username, password} = JSON.parse(data.toString());
+                    if (!username || !password) {
+                        res.writeHead(400).end(JSON.stringify('Incorrect username or password'));
+                        return;
+                    }
+                    const users: User[] = await db.Read('users') as User[];
+                    if (users.find((u) => u.username === username)) {
+                        res.writeHead(400).end(JSON.stringify('Username exists'));
+                        return;
+                    }
+                    await db.Create('users', JSON.parse(data.toString()));
+                    res.writeHead(201).end(JSON.stringify('User created successfully'));
+                } catch (e) {
+                    res.writeHead(400).end(JSON.stringify('Register Failed'))
+                }
+            })
+            return;
+        }
+
 
         // TODO /sse Api implementation
         if(reqPath === 'sse') {

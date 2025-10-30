@@ -4,11 +4,5 @@
     "model": "audi a4",
     "price": 40000,
     "ownerId": "maciej"
-  },
-  {
-    "id": "c_28660685",
-    "model": "seledyn a3",
-    "price": 60000,
-    "ownerId": "roki"
   }
 ]
