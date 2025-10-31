@@ -8,16 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DB_DIR = path.join(__dirname, '..', 'db');
 
-// Generate unique id in the data base file
-function genID<T>(type : 'users' | 'cars', users: T[]): string {
-    const id: string = `${type}${crypto.randomBytes(2).toString('hex')}`
-    console.log(id)
-    if(users.find(u => (u as any).id === id)) {
-        return genID(type, users);
-    }
-    return id;
-}
-
 //CRUD implementation
 //Create
 export async function Create<T> (type : 'users' | 'cars', newItem: T) : Promise<T[]  | ApiError> {
@@ -26,8 +16,7 @@ export async function Create<T> (type : 'users' | 'cars', newItem: T) : Promise<
     //console.log(fileDB);
     try {
         data =  JSON.parse(await fs.readFile(fileDB, "utf8"));
-        newItem = { id :  genID(type,data), ...newItem} ;
-        console.log(newItem);
+        newItem = { id :  `${type.substring(0, 3)}${crypto.randomBytes(4).toString('hex')}`, ...newItem} ;
         data.push(newItem);
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
         return data;
@@ -58,7 +47,7 @@ export async function Read<T> (type : 'users' | 'cars', id? : string) : Promise<
 }
 
 // Update
-export async function Update<T>(type : 'users' | 'cars', id: string, updatedItem : T) : Promise<T[] | ApiError> {
+export async function Update<T>(type : 'users' | 'cars', id: string, item : T) : Promise<T[] | ApiError> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
     let data: T[] = [];
     try {
@@ -68,10 +57,9 @@ export async function Update<T>(type : 'users' | 'cars', id: string, updatedItem
             return { code: 404, error: `${id} not found in database` };
         }
 
-        const currentItem : T = data[index];
-        const updatedItem1 : T = { ...currentItem, ...updatedItem };
-        (updatedItem1 as any).id = id;
-        data[index] = updatedItem1;
+        const updatedItem : T = { ...data[index], ...item };
+        (updatedItem as any).id = id;
+        data[index] = updatedItem;
 
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
         return data;

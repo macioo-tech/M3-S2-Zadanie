@@ -116,7 +116,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                         res.writeHead(400).end(JSON.stringify('Username exists'));
                         return;
                     }
-                    await db.Create('users', JSON.parse(data.toString()));
+                    const newUser : Omit<User, 'id'> = { username: username, password: password, role: 'user', balance: 0};
+                    await db.Create('users', newUser);
                     res.writeHead(201).end(JSON.stringify('User created successfully'));
                 } catch (e) {
                     res.writeHead(400).end(JSON.stringify('Register Failed'))
@@ -125,15 +126,26 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             return;
         }
 
-
         // TODO /sse Api implementation
         if(reqPath === 'sse') {
-            res.writeHead(200).end('ok')
+            const clients: ServerResponse[] = [];
+
+            res.writeHead(200, {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive"
+            });
+            clients.push(res);
+            req.on("close", () => {
+                const index = clients.indexOf(res);
+                if (index !== -1) {
+                    clients.splice(index, 1);
+                }
+            });
             return
         }
 
         res.writeHead(404, `Method ${method} /${reqPath} does not exist`).end();
-
     } catch (e) {
         res.writeHead(500, `Server Error ${e}`).end();
     }
