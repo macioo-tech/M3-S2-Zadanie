@@ -5,7 +5,6 @@ import {fileURLToPath} from "node:url";
 import * as db from "./db.js";
 import {User, Car} from "./types.js";
 import crypto from "node:crypto";
-import {debuglog} from "node:util";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
