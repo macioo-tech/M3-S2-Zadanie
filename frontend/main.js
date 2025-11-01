@@ -65,7 +65,7 @@ async function checkAuth() {
       const data = await res.json();
       if (Array.isArray(data)) {
         // Założenie: konto admina znajduje się wśród użytkowników i ma role 'admin'
-        currentUser = data.find(u => u.role === 'admin') || null;
+        currentUser = data.find(u => {u.role === 'admin'}) || null;
       } else {
         currentUser = data;
       }
@@ -232,7 +232,7 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/cars', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, price })
+        body: JSON.stringify({model, price})
       });
       const data = await res.json();
       if (res.status === 201) {
@@ -249,8 +249,13 @@ function setupEventListeners() {
   if (buyCarForm) {
     buyCarForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const userId = currentUser.id;
+      console.log(userId);
       const carId = document.getElementById('buyCarId').value;
-      const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST' });
+      const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({buyerId: userId}),
+      });
       const data = await res.json();
       if (res.status === 200) {
         showMessage('Samochód zakupiony', 'success');

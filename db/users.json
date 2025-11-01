@@ -4,13 +4,20 @@
     "username": "admin",
     "password": "admin123",
     "role": "admin",
-    "balance": 10000
+    "balance": 4000
   },
   {
-    "id": "users154f",
-    "username": "maciej",
-    "password": "admin1234",
-    "role" : "user",
-    "balance" : 0
+    "username": "alojzysz",
+    "password": "QWERTYSa",
+    "id": "$usera2612295",
+    "role": "user",
+    "balance": 94000
+  },
+  {
+    "username": "alojzy",
+    "password": "QWERTY",
+    "id": "$userb6549778",
+    "role": "user",
+    "balance": 0
   }
 ]

@@ -3,6 +3,42 @@
     "id": "audi1",
     "model": "audi a4",
     "price": 40000,
-    "ownerId": "maciej"
+    "ownerId": ""
+  },
+  {
+    "model": "BYD",
+    "price": 80000,
+    "id": "car3d69b85e",
+    "ownerId": ""
+  },
+  {
+    "model": "Renault Clio",
+    "price": 6000,
+    "id": "car12420648",
+    "ownerId": "$usera2612295"
+  },
+  {
+    "model": "Renault Clio",
+    "price": 6000,
+    "id": "car964da803",
+    "ownerId": ""
+  },
+  {
+    "model": "Ford Mustang",
+    "price": 89000,
+    "id": "carfd9440ba",
+    "ownerId": ""
+  },
+  {
+    "model": "Ford Mustang",
+    "price": 90000,
+    "id": "carc10a9eaf",
+    "ownerId": ""
+  },
+  {
+    "model": "Ford Mustang",
+    "price": 102000,
+    "id": "car2a3194eb",
+    "ownerId": ""
   }
 ]

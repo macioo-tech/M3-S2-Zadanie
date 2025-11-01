@@ -13,8 +13,7 @@ export interface User {
     ownerId: string;
   }
 
-  export interface ApiError {
-    code: number;
-    error: string;
-  }
-  
+export type TypeMap = {
+    users: User;
+    cars: Car;
+};

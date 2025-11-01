@@ -1,8 +1,7 @@
 import fs from "node:fs/promises"
 import path from "node:path";
 import {fileURLToPath} from "node:url";
-import {ApiError, Car, User} from "./types.js";
-import crypto from "node:crypto";
+import {TypeMap} from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,25 +9,23 @@ const DB_DIR = path.join(__dirname, '..', 'db');
 
 //CRUD implementation
 //Create
-export async function Create<T> (type : 'users' | 'cars', newItem: T) : Promise<T[]  | ApiError> {
+export async function Create<T extends keyof TypeMap> (type : T, newItem: TypeMap[T]) : Promise<void> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
-    let data: T[] = [];
-    //console.log(fileDB);
+    let data: TypeMap[T][] = [];
     try {
         data =  JSON.parse(await fs.readFile(fileDB, "utf8"));
-        newItem = { id :  `${type.substring(0, 3)}${crypto.randomBytes(4).toString('hex')}`, ...newItem} ;
         data.push(newItem);
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
-        return data;
+        return ;
     } catch(e) {
-        return { code: 500, error: `${type} database error` };
+        return ;
     }
 }
 
-// Read TODO - better types control
-export async function Read<T> (type : 'users' | 'cars', id? : string) : Promise<T[] | ApiError> {
+// Read
+export async function Read<T extends keyof TypeMap> (type : T, id? : string) : Promise<TypeMap[T][]> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
-    let data: T[] = [];
+    let data: TypeMap[T][] = [];
     try {
         data =  JSON.parse(await fs.readFile(fileDB, "utf8"))
         if (!id) {
@@ -38,46 +35,45 @@ export async function Read<T> (type : 'users' | 'cars', id? : string) : Promise<
             if (item) {
                 return [item];
             } else {
-                return { code: 404, error: `${id} not found in database` };
+               return [];
             }
         }
     } catch (e) {
-        return { code: 500, error: `${type} database error` };
+        return [];
     }
 }
 
 // Update
-export async function Update<T>(type : 'users' | 'cars', id: string, item : T) : Promise<T[] | ApiError> {
+export async function Update<T extends keyof TypeMap>(type : T, id: string, newItem : TypeMap[T]) : Promise<void> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
-    let data: T[] = [];
+    let data: TypeMap[T][] = [];
     try {
         data =  JSON.parse(await fs.readFile(fileDB, "utf8"));
         const index = data.findIndex(i => (i as any).id === id);
         if (index === -1) {
-            return { code: 404, error: `${id} not found in database` };
+            return;
         }
-
-        const updatedItem : T = { ...data[index], ...item };
+        const updatedItem : TypeMap[T] = { ...data[index], ...newItem };
         (updatedItem as any).id = id;
         data[index] = updatedItem;
 
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
-        return data;
+        return ;
     } catch(e) {
-        return { code: 500, error: `${type} database error` };
+        return ;
     }
 }
 
 // Delete
-export async function Delete<T>(type : 'users' | 'cars', id: string) : Promise<T[] | ApiError> {
+export async function Delete<T extends keyof TypeMap>(type : T, id: string) : Promise<void> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
-    let data: T[] = [];
+    let data: TypeMap[T][] = [];
     try {
         data =  JSON.parse(await fs.readFile(fileDB, "utf8"));
         data = data.filter(i => (i as any).id !== id);
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
-        return data;
+        return ;
     } catch(e) {
-        return { code: 500, error: `${type} database error` };
+        return ;
     }
 }

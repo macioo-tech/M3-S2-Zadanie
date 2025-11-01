@@ -4,21 +4,46 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import * as db from "./db.js";
 import {User, Car} from "./types.js";
+import crypto from "node:crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 
+function findHeader (reqPath : string) : string {
+    switch (path.extname(reqPath === undefined ? '/index.html' : reqPath).toLowerCase()) {
+        case '.html': return 'text/html';
+        case '.css': return 'text/css';
+        case '.js': return 'application/javascript';
+        default: return 'application/json';
+    }
+}
+
+async function parseRequestBody(req: IncomingMessage): Promise<string> {
+    return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk) => {
+            data += chunk;
+        });
+        req.on('end', () => {
+            resolve(data);
+        });
+    });
+}
+
 // Main server API router handler
 export async function router(req: IncomingMessage, res: ServerResponse) {
     const method = req.method;
     const url = new URL(req.url!, `http://${req.headers.host}`)
-    const [reqPath, reqId ] = url.pathname.split("/").filter(Boolean);
-    let data = '';
+    const [reqPath, reqId, optional ] = url.pathname.split("/").filter(Boolean);
+ //   let data = '';
 
     try {
-        // static files implementation
-        if(reqPath === undefined || reqPath === 'index.html' || reqPath === 'style.css' || reqPath === 'main.js') {
+        // serve static files
+        if(reqPath === undefined ||
+            reqPath === 'index.html' ||
+            reqPath === 'style.css' ||
+            reqPath === 'main.js') {
             const filePath = path.join(FRONTEND_DIR, url.pathname === '/' ? '/index.html' : url.pathname);
             if (!filePath.startsWith(FRONTEND_DIR)) {
                 return;
@@ -28,105 +53,131 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 if (stats.isFile()) {
                     const fileStream = await fs.readFile(filePath);
                     //res.writeHead(200, { 'Content-Type': getMimeType(filePath) }).end(fileStream);
-                    res.writeHead(200).end(fileStream);
-                    return true;
+                    res.writeHead(200, findHeader(reqPath)).end(fileStream);
+                    return;
                 }
             } catch (e) {
-                //res.writeHead(404, { 'Content-Type': getMimeType(filePath) }).end("File Not Found");
-                res.writeHead(404).end("File Not Found");
+                res.writeHead(404, findHeader(reqPath)).end("File Not Found");
                 return;
             }
             return;
         }
 
-        // /users /cars Api implementation
-        if(reqPath === 'users' || reqPath === 'cars') {
-            if(method === 'GET') {
-                data = JSON.stringify(await db.Read(reqPath, reqId));
-                res.writeHead(200).end(data);
-                return;
-            }
-            if(method === 'POST') {
-                req.on('data', (chunk) => {
-                 data += chunk;
-                })
-                req.on('end', async () => {
-                    await db.Create(reqPath, JSON.parse(data.toString()));
-                    res.writeHead(201).end(data);
-                })
-                return;
-            }
-            if(method === 'DELETE') {
-                data = JSON.stringify(await db.Delete(reqPath, reqId));
-                res.writeHead(202).end(data);
-                return;
-            }
-            if(method === 'PUT') {
-                req.on('data', (chunk) => {
-                    data += chunk;
-                })
-                req.on('end', async () => {
-                    await db.Update(reqPath, reqId, JSON.parse(data.toString()));
-                    res.writeHead(204).end(data);
-                })
+        // GET
+        if (method === 'GET') {
+            // /users/{id} /cars/{id} // id is optional
+            // {id} is optional, if no id return all abjects
+            if(reqPath === 'users' || reqPath === 'cars') {
+                let data : string = JSON.stringify(await db.Read(reqPath, reqId));
+                res.writeHead(200, findHeader(reqPath)).end(data);
                 return;
             }
         }
 
-        //  /login Api implementation
-        if(reqPath === 'login' && method === 'POST') {
-            req.on('data', (chunk) => {
-                data += chunk;
-            })
-            req.on('end', async () => {
-                try{
-                    const {username, password} = JSON.parse(data.toString());
-                    if(!username || !password) {
-                        res.writeHead(400).end(JSON.stringify('Login Failed'));
-                        return;
-                    }
-                    const users : User[] = await db.Read('users') as User[];
-                    const user = users.find((u) => u.username === username && u.password === password);
-                    if(user) {
-                        res.writeHead(200).end(JSON.stringify('Login Ok'))
-                    } else {
-                        res.writeHead(400).end(JSON.stringify('Login Failed'))
-                    }
-                } catch (e) {
-                    res.writeHead(400).end(JSON.stringify('Login Failed'))
+        // PUT
+        if (method === 'PUT') {
+            // /users/id /cars/{id} // id is required
+            if (reqId) {
+                if(reqPath === 'users' || reqPath === 'cars') {
+                    const body = await parseRequestBody(req);
+                    await db.Update(reqPath, reqId, JSON.parse(body.toString()));
+                    res.writeHead(200, findHeader(reqPath)).end(body);
+                    return;
                 }
-            })
-            return;
+            }
         }
 
-        //  /register Api implementation
-        if(reqPath === 'register' && method === 'POST') {
-            req.on('data', (chunk) => {
-                data += chunk;
-            })
-            req.on('end', async () => {
-                try {
-                    const {username, password} = JSON.parse(data.toString());
-                    if (!username || !password) {
-                        res.writeHead(400).end(JSON.stringify('Incorrect username or password'));
-                        return;
-                    }
-                    const users: User[] = await db.Read('users') as User[];
-                    if (users.find((u) => u.username === username)) {
-                        res.writeHead(400).end(JSON.stringify('Username exists'));
-                        return;
-                    }
-                    const newUser : Omit<User, 'id'> = { username: username, password: password, role: 'user', balance: 0};
-                    await db.Create('users', newUser);
-                    res.writeHead(201).end(JSON.stringify('User created successfully'));
-                } catch (e) {
-                    res.writeHead(400).end(JSON.stringify('Register Failed'))
+        // POST
+        if (method === 'POST') {
+            // /cars
+            if (reqPath === 'cars' && !reqId && !optional) {
+                const body = await parseRequestBody(req);
+                const newData : Car = JSON.parse(body.toString());
+                newData.id = `car${crypto.randomBytes(4).toString('hex')}`;
+                newData.ownerId = '';
+                console.log(newData);
+                await db.Create(reqPath, newData);
+                res.writeHead(201, findHeader(reqPath)).end(JSON.stringify(newData));
+                return;
+            }
+
+            // /cars/{id}/buy // id is required
+            if (reqPath === 'cars' && reqId && optional === 'buy') {
+                const body = await parseRequestBody(req);
+                const { buyerId } = JSON.parse(body.toString());
+                console.log(body);
+                if(!buyerId) {
+                    res.writeHead(400).end(JSON.stringify('Incorrect Username'));
+                    return;
                 }
-            })
-            return;
+                const car : Car[] = await db.Read('cars', reqId)
+                if(!Array.isArray(car)) {
+                    res.writeHead(400).end(JSON.stringify('Car Not Found'));
+                    return;
+                }
+                if (car[0].ownerId !== null) {
+                    res.writeHead(400).end(JSON.stringify('Car Is Owned'));
+                    return;
+                }
+                const buyer : User[] = await db.Read('users', buyerId)
+                if(!Array.isArray(buyer)) {
+                    res.writeHead(400).end(JSON.stringify('User Not Found'));
+                    return;
+                }
+                if (buyer[0].balance < car[0].price) {
+                    res.writeHead(400).end(JSON.stringify('Balance Not Enough'));
+                    return;
+                }
+                buyer[0].balance -= car[0].price;
+                await db.Update('users', buyer[0].id, buyer[0]);
+                car[0].ownerId = buyer[0].id;
+                await db.Update('cars', car[0].id, car[0]);
+                res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Car Bought'))
+                return;
+            }
+
+            // /login
+            if(reqPath === 'login') {
+                const body = await parseRequestBody(req);
+                const { username, password } = JSON.parse(body.toString());
+                if(!username || !password) {
+                    res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'));
+                    return;
+                }
+                const users : User[] = await db.Read('users');
+                const user = users.find((u) => u.username === username && u.password === password);
+                if(user) {
+                    res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Login Ok'))
+                } else {
+                    res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'))
+                }
+                return;
+            }
+            //  /register
+            if(reqPath === 'register') {
+                const body = await parseRequestBody(req);
+                const { username, password } = JSON.parse(body.toString());
+                if (!username || !password) {
+                    res.writeHead(400).end(JSON.stringify('Invalid Username Or Password'));
+                    return;
+                }
+                const users: User[] = await db.Read('users');
+                if (users.find((u) => u.username === username)) {
+                    res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Username Already Registered'));
+                    return;
+                }
+                const newData : User = JSON.parse(body.toString());
+                newData.id = `$user${crypto.randomBytes(4).toString('hex')}`;
+                newData.role = 'user';
+                newData.balance = 0;
+                console.log(newData);
+                await db.Create('users', newData);
+                res.writeHead(201, findHeader(reqPath)).end(JSON.stringify('Register Ok'));
+                return;
+            }
         }
 
-        // TODO /sse Api implementation
+        // /sse
         if(reqPath === 'sse') {
             const clients: ServerResponse[] = [];
 
@@ -136,8 +187,10 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 "Connection": "keep-alive"
             });
             clients.push(res);
+            console.log('SSE Client Connected')
             req.on("close", () => {
                 const index = clients.indexOf(res);
+                console.log('SSE Client Disconnected');
                 if (index !== -1) {
                     clients.splice(index, 1);
                 }
