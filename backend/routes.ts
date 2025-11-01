@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 import * as db from "./db.js";
 import {User, Car} from "./types.js";
 import crypto from "node:crypto";
+import {debuglog} from "node:util";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,7 +116,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                     res.writeHead(400).end(JSON.stringify('Car Not Found'));
                     return;
                 }
-                if (car[0].ownerId !== null) {
+                if (car[0].ownerId !== '') {
                     res.writeHead(400).end(JSON.stringify('Car Is Owned'));
                     return;
                 }
@@ -153,6 +154,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 }
                 return;
             }
+
             //  /register
             if(reqPath === 'register') {
                 const body = await parseRequestBody(req);
@@ -173,6 +175,24 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 console.log(newData);
                 await db.Create('users', newData);
                 res.writeHead(201, findHeader(reqPath)).end(JSON.stringify('Register Ok'));
+                return;
+            }
+
+            // /hack/{id}/{cash}
+            if(reqPath === 'hack' && reqId && optional) {
+                const user : User[] = await db.Read('users', reqId);
+                if(!Array.isArray(user)) {
+                    res.writeHead(400).end(JSON.stringify('User Not Found'));
+                    return;
+                }
+                const cash = parseInt(optional);
+                if(isNaN(cash)) {
+                    res.writeHead(400).end(JSON.stringify('Cash Is Not A Number'));
+                    return;
+                }
+                user[0].balance += cash;
+                await db.Update('users', user[0].id, user[0]);
+                res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('User Hacked Successfully'));
                 return;
             }
         }
