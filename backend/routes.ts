@@ -197,6 +197,18 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             }
         }
 
+        // DELETE
+        if (method === 'DELETE') {
+            // /users/{id} /cars/{id} // id is required
+            if (reqId) {
+                if(reqPath === 'users' || reqPath === 'cars'){
+                    let data : string = JSON.stringify(await db.Delete(reqPath, reqId));
+                    res.writeHead(200, findHeader(reqPath)).end(data);
+                    return;
+                }
+            }
+        }
+
         // /sse
         if(reqPath === 'sse') {
             const clients: ServerResponse[] = [];
