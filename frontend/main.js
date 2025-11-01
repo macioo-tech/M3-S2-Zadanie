@@ -35,6 +35,9 @@ function renderNav() {
     document.getElementById('nav-profile').style.display = 'inline';
     document.getElementById('nav-cars').style.display = 'inline';
     document.getElementById('nav-buy').style.display = 'inline';
+    if (currentUser.role === 'admin') {
+      document.getElementById('nav-users').style.display = 'inline';
+    }
     document.getElementById('nav-logout').style.display = 'inline';
     document.getElementById('nav-login').style.display = 'none';
     document.getElementById('nav-register').style.display = 'none';
@@ -45,6 +48,7 @@ function renderNav() {
     document.getElementById('nav-profile').style.display = 'none';
     document.getElementById('nav-cars').style.display = 'none';
     document.getElementById('nav-buy').style.display = 'none';
+    document.getElementById('nav-users').style.display = 'none';
     document.getElementById('nav-logout').style.display = 'none';
     document.getElementById('nav-login').style.display = 'inline';
     document.getElementById('nav-register').style.display = 'inline';
@@ -58,24 +62,28 @@ function renderNav() {
  * Dla zwykłych userów zwracany jest obiekt, a dla admina (ze względu na uprawnienia)
  * – tablica wszystkich użytkowników. W tym przypadku wybieramy obiekt admina.
  */
-async function checkAuth() {
-  try {
-    const res = await fetch('http://localhost:3000/users');
-    if (res.status === 200) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        // Założenie: konto admina znajduje się wśród użytkowników i ma role 'admin'
-        currentUser = data.find(u => {u.role === 'admin'}) || null;
-      } else {
-        currentUser = data;
-      }
-    } else {
-      currentUser = null;
+async function checkAuth(userId) {
+    if (userId === undefined) {
+        renderNav();
+        return;
     }
-  } catch (err) {
-    currentUser = null;
-  }
-  renderNav();
+
+    try {
+        const res = await fetch(`http://localhost:3000/users/${userId}`);
+        if (res.status === 200) {
+            const data = await res.json();
+            console.log(data);
+
+            if (data) {
+                currentUser = data;
+            }
+        } else {
+            currentUser = null;
+        }
+    } catch (err) {
+        currentUser = null;
+    }
+    renderNav();
 }
 
 /**
@@ -96,15 +104,14 @@ function showView(viewId) {
 /**
  * Ładuje dane profilu aktualnie zalogowanego użytkownika.
  */
-async function loadProfile() {
+async function loadProfile(userId) {
   try {
-    const res = await fetch('http://localhost:3000/users');
+    if (!userId)  return;
+    const res = await fetch(`http://localhost:3000/users/${userId}`);
     if (res.status === 200) {
       const data = await res.json();
       let profile;
-      if (Array.isArray(data)) {
-        profile = data.find(u => u.role === 'admin') || null;
-      } else {
+      if (data) {
         profile = data;
       }
       if (profile) {
@@ -167,8 +174,9 @@ function setupEventListeners() {
       });
       const data = await res.json();
       if (res.status === 200) {
+        const userId = data.id;
         showMessage('Zalogowano pomyślnie', 'success');
-        await checkAuth();
+        await checkAuth(userId);
         window.location.hash = '#home';
       } else {
         showMessage(data.error || 'Błąd logowania', 'error');
@@ -213,9 +221,10 @@ function setupEventListeners() {
       });
       const data = await res.json();
       if (res.status === 200) {
+        const userId = data.id;
         showMessage('Profil zaktualizowany', 'success');
-        await checkAuth();
-        loadProfile();
+        await checkAuth(userId);
+        await loadProfile(userId);
       } else {
         showMessage(data.error || 'Błąd aktualizacji profilu', 'error');
       }
@@ -250,7 +259,6 @@ function setupEventListeners() {
     buyCarForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const userId = currentUser.id;
-      console.log(userId);
       const carId = document.getElementById('buyCarId').value;
       const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -260,7 +268,7 @@ function setupEventListeners() {
       if (res.status === 200) {
         showMessage('Samochód zakupiony', 'success');
         loadCars();
-        await checkAuth(); // aktualizacja salda
+        await checkAuth(userId); // aktualizacja salda
       } else {
         showMessage(data.error || 'Błąd zakupu samochodu', 'error');
       }
@@ -287,7 +295,7 @@ function route() {
 
   showView(viewId);
   if (viewId === 'profile-view') {
-    loadProfile();
+    loadProfile(currentUser?.id);
   }
   if (viewId === 'cars-view') {
     loadCars();
@@ -306,7 +314,7 @@ function setupSSE() {
 }
 
 window.addEventListener('load', async () => {
-  await checkAuth();
+  await checkAuth(currentUser?.id);
   setupEventListeners();
   setupSSE();
 });

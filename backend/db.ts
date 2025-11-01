@@ -23,7 +23,9 @@ export async function Create<T extends keyof TypeMap> (type : T, newItem: TypeMa
 }
 
 // Read
-export async function Read<T extends keyof TypeMap> (type : T, id? : string) : Promise<TypeMap[T][]> {
+export async function Read<T extends keyof TypeMap> (type : T) : Promise<TypeMap[T][]>;
+export async function Read<T extends keyof TypeMap> (type : T, id: string) : Promise<TypeMap[T]>;
+export async function Read<T extends keyof TypeMap> (type : T, id? : string) : Promise<TypeMap[T][] | TypeMap[T]> {
     const fileDB : string = path.join(DB_DIR, `${type}.json`);
     let data: TypeMap[T][] = [];
     try {
@@ -33,7 +35,7 @@ export async function Read<T extends keyof TypeMap> (type : T, id? : string) : P
         } else {
             const item = data.find(i => (i as any).id === id);
             if (item) {
-                return [item];
+                return item;
             } else {
                return [];
             }

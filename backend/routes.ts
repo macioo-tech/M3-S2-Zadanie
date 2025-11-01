@@ -111,28 +111,28 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                     res.writeHead(400).end(JSON.stringify('Incorrect Username'));
                     return;
                 }
-                const car : Car[] = await db.Read('cars', reqId)
-                if(!Array.isArray(car)) {
+                const car : Car = await db.Read('cars', reqId)
+                if(!car) {
                     res.writeHead(400).end(JSON.stringify('Car Not Found'));
                     return;
                 }
-                if (car[0].ownerId !== '') {
+                if (car.ownerId !== '') {
                     res.writeHead(400).end(JSON.stringify('Car Is Owned'));
                     return;
                 }
-                const buyer : User[] = await db.Read('users', buyerId)
-                if(!Array.isArray(buyer)) {
+                const buyer : User = await db.Read('users', buyerId)
+                if(!buyer) {
                     res.writeHead(400).end(JSON.stringify('User Not Found'));
                     return;
                 }
-                if (buyer[0].balance < car[0].price) {
+                if (buyer.balance < car.price) {
                     res.writeHead(400).end(JSON.stringify('Balance Not Enough'));
                     return;
                 }
-                buyer[0].balance -= car[0].price;
-                await db.Update('users', buyer[0].id, buyer[0]);
-                car[0].ownerId = buyer[0].id;
-                await db.Update('cars', car[0].id, car[0]);
+                buyer.balance -= car.price;
+                await db.Update('users', buyer.id, buyer);
+                car.ownerId = buyer.id;
+                await db.Update('cars', car.id, car);
                 res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Car Bought'))
                 return;
             }
@@ -148,7 +148,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 const users : User[] = await db.Read('users');
                 const user = users.find((u) => u.username === username && u.password === password);
                 if(user) {
-                    res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Login Ok'))
+                    res.writeHead(200, findHeader(reqPath)).end(JSON.stringify(user))
                 } else {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'))
                 }
@@ -180,8 +180,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
 
             // /hack/{id}/{cash}
             if(reqPath === 'hack' && reqId && optional) {
-                const user : User[] = await db.Read('users', reqId);
-                if(!Array.isArray(user)) {
+                const user : User = await db.Read('users', reqId);
+                if(!user) {
                     res.writeHead(400).end(JSON.stringify('User Not Found'));
                     return;
                 }
@@ -190,8 +190,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                     res.writeHead(400).end(JSON.stringify('Cash Is Not A Number'));
                     return;
                 }
-                user[0].balance += cash;
-                await db.Update('users', user[0].id, user[0]);
+                user.balance += cash;
+                await db.Update('users', user.id, user);
                 res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('User Hacked Successfully'));
                 return;
             }
