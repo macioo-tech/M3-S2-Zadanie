@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 import * as db from "./db.js";
 import {User, Car} from "./types.js";
 import crypto from "node:crypto";
+import {setAuthCookie, generateToken, authUser} from "./auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +68,12 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         if (method === 'GET') {
             // /users/{id} /cars/{id} // id is optional
             // {id} is optional, if no id return all abjects
+        //    const user = authUser(req);
+        //    console.log(user);
+        //    if(!user) {
+        //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+        //        return;
+        //    }
             if(reqPath === 'users' || reqPath === 'cars') {
                 let data : string = JSON.stringify(await db.Read(reqPath, reqId));
                 res.writeHead(200, findHeader(reqPath)).end(data);
@@ -77,6 +84,12 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // PUT
         if (method === 'PUT') {
             // /users/id /cars/{id} // id is required
+        //    const user = authUser(req);
+        //    console.log(user);
+        //    if(!user) {
+        //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+        //        return;
+        //    }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars') {
                     const body = await parseRequestBody(req);
@@ -103,6 +116,12 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
 
             // /cars/{id}/buy // id is required
             if (reqPath === 'cars' && reqId && optional === 'buy') {
+            //    const user = authUser(req);
+            //    console.log(user);
+            //    if(!user) {
+            //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+            //        return;
+            //    }
                 const body = await parseRequestBody(req);
                 const { buyerId } = JSON.parse(body.toString());
                 console.log(body);
@@ -147,6 +166,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 const users : User[] = await db.Read('users');
                 const user = users.find((u) => u.username === username && u.password === password);
                 if(user) {
+                //    const token : string = generateToken(user.id);
+                //    setAuthCookie(res, token, 1);
                     res.writeHead(200, findHeader(reqPath)).end(JSON.stringify(user))
                 } else {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'))
@@ -199,6 +220,12 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // DELETE
         if (method === 'DELETE') {
             // /users/{id} /cars/{id} // id is required
+        //    const user = authUser(req);
+        //    console.log(user);
+        //    if(!user) {
+        //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+        //        return;
+        //    }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars'){
                     let data : string = JSON.stringify(await db.Delete(reqPath, reqId));

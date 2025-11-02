@@ -3,13 +3,7 @@ import jwt from "jsonwebtoken"
 import {TokenPayload, User} from "./types.js";
 import * as db from "./db.js";
 
-export function generateToken(userId: string): string {
-    const SecretKey: string = process.env.SECRET_KEY as string;
-    const payload: TokenPayload = { userId };
-    return jwt.sign(payload, SecretKey, { expiresIn: "1h" });
-}
-
-export function decodeToken(token: string): TokenPayload | null {
+function decodeToken(token: string): TokenPayload | null {
     const SecretKey: string = process.env.SECRET_KEY as string;
     try {
         return jwt.verify(token, SecretKey) as TokenPayload;
@@ -17,13 +11,24 @@ export function decodeToken(token: string): TokenPayload | null {
         return null;
     }
 }
-export async function getUserFromToken(token: string): Promise<User | null> {
-    const users = await db.Read('users');
-    const id = decodeToken(token);
-    if (!id) {
-        return null;
+
+function parseCookies(req: IncomingMessage): Record<string, string> {
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) {
+        return {};
     }
-    return users.find((u) => u.id === id.userId) || null;
+    return cookieHeader.split(";").reduce((acc, cookie) => {
+        const [key, value] = cookie.split("=");
+        acc[key.trim()] = value;
+        return acc;
+    }, {} as Record<string, string>);
+}
+
+export function generateToken(userId: string): string {
+    const SecretKey: string = process.env.SECRET_KEY as string;
+    console.log(process.env.SECRET_KEY)
+    const payload: TokenPayload = { userId };
+    return jwt.sign(payload, SecretKey, { expiresIn: "1h" });
 }
 
 export function setAuthCookie(res: ServerResponse, token: string, maxAge?: number): void {
@@ -33,15 +38,15 @@ export function setAuthCookie(res: ServerResponse, token: string, maxAge?: numbe
     );
 }
 
-export function parseCookies(req: IncomingMessage): Record<string, string> {
-    const cookieHeader = req.headers.cookie;
-    if (!cookieHeader) {
-        console.log("No cookies");
-        return {};
+export async function authUser (req : IncomingMessage ): Promise<User | null> {
+    const cookies = parseCookies(req);
+    const token = cookies["authToken"];
+    if (!token) {
+        return null;
     }
-    return cookieHeader.split(";").reduce((acc, cookie) => {
-        const [key, value] = cookie.split("=");
-        acc[key.trim()] = value;
-        return acc;
-    }, {} as Record<string, string>);
+    const id = decodeToken(token);
+    if (!id) {
+        return null;
+    }
+    return await db.Read('users', id.userId);
 }
