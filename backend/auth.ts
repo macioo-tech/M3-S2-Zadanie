@@ -35,21 +35,23 @@ export function generateToken(userId: string): string {
 export function setAuthCookie(res: ServerResponse, token: string, maxAge?: number): void {
     res.setHeader(
         "set-cookie",
-        `token=${token}; ${maxAge ? `max-age=${maxAge}` : ""};`
+        `token=${token}; HttpOnly; Secure; Path=/; ${maxAge ? `Max-Age=${maxAge}` : ""}`
     );
 }
 
-export async function authUser (req : IncomingMessage ): Promise<boolean> {
+export async function authUser (req : IncomingMessage ): Promise<User | null> {
     const cookies = parseCookies(req);
-    const token = cookies["authToken"];
+    const token = cookies["token"];
     if (!token) {
-        return false;
+        return null;
     }
     const id = decodeToken(token);
     if (!id) {
-        return false;
+        return null;
     }
     const user = await db.Read('users', id.userId);
-    if (user) return true
-    return false;
+    if (!user) {
+        return null;
+    }
+    return user;
 }

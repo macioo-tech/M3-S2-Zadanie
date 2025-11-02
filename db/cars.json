@@ -40,5 +40,11 @@
     "price": 102000,
     "id": "car2a3194eb",
     "ownerId": ""
+  },
+  {
+    "model": "Deawoo Matiz",
+    "price": 2500,
+    "id": "car01a99351",
+    "ownerId": "$userb6549778"
   }
 ]

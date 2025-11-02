@@ -105,57 +105,57 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
 
         // POST
         if (method === 'POST') {
-            // /cars
-            if (reqPath === 'cars' && !reqId && !optional) {
-                const body = await parseRequestBody(req);
-                const newData : Car = JSON.parse(body.toString());
-                newData.id = `car${crypto.randomBytes(4).toString('hex')}`;
-                newData.ownerId = '';
-                console.log(newData);
-                await db.Create(reqPath, newData);
-                res.writeHead(201, findHeader(reqPath)).end(JSON.stringify(newData));
-                return;
-            }
 
-            // /cars/{id}/buy // id is required
-            if (reqPath === 'cars' && reqId && optional === 'buy') {
+            if (reqPath === 'cars'){
                 // const auth = await authUser(req)
                 // if(!auth) {
                 //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
                 //     return;
                 // }
-                const body = await parseRequestBody(req);
-                const { buyerId } = JSON.parse(body.toString());
-                console.log(body);
-                if(!buyerId) {
-                    res.writeHead(400).end(JSON.stringify('Incorrect Username'));
+                // /cars
+                if(!reqId && !optional) {
+                    const body = await parseRequestBody(req);
+                    const newData : Car = JSON.parse(body.toString());
+                    newData.id = `car${crypto.randomBytes(4).toString('hex')}`;
+                    newData.ownerId = '';
+                    await db.Create(reqPath, newData);
+                    res.writeHead(201, findHeader(reqPath)).end(JSON.stringify(newData));
                     return;
                 }
-                const car : Car = await db.Read('cars', reqId)
-                if(!car) {
-                    res.writeHead(400).end(JSON.stringify('Car Not Found'));
+                // /cars/{id}/buy // id is required
+                if (reqId && optional === 'buy') {
+                    const body = await parseRequestBody(req);
+                    const { buyerId } = JSON.parse(body.toString());
+                    if(!buyerId) {
+                        res.writeHead(400).end(JSON.stringify('Incorrect Username'));
+                        return;
+                    }
+                    const car : Car = await db.Read('cars', reqId)
+                    if(!car) {
+                        res.writeHead(400).end(JSON.stringify('Car Not Found'));
+                        return;
+                    }
+                    if (car.ownerId !== '') {
+                        res.writeHead(400).end(JSON.stringify('Car Is Owned'));
+                        return;
+                    }
+                    const buyer : User = await db.Read('users', buyerId)
+                    if(!buyer) {
+                        res.writeHead(400).end(JSON.stringify('User Not Found'));
+                        return;
+                    }
+                    if (buyer.balance < car.price) {
+                        res.writeHead(400).end(JSON.stringify('Balance Not Enough'));
+                        return;
+                    }
+                    buyer.balance -= car.price;
+                    await db.Update('users', buyer.id, buyer);
+                    car.ownerId = buyer.id;
+                    await db.Update('cars', car.id, car);
+                    res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Car Bought'))
+                    sseEvent('car-bought', { id: car.id, buyerId: buyer.id });
                     return;
                 }
-                if (car.ownerId !== '') {
-                    res.writeHead(400).end(JSON.stringify('Car Is Owned'));
-                    return;
-                }
-                const buyer : User = await db.Read('users', buyerId)
-                if(!buyer) {
-                    res.writeHead(400).end(JSON.stringify('User Not Found'));
-                    return;
-                }
-                if (buyer.balance < car.price) {
-                    res.writeHead(400).end(JSON.stringify('Balance Not Enough'));
-                    return;
-                }
-                buyer.balance -= car.price;
-                await db.Update('users', buyer.id, buyer);
-                car.ownerId = buyer.id;
-                await db.Update('cars', car.id, car);
-                res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Car Bought'))
-                sseEvent('car-bought', { id: car.id, buyerId: buyer.id });
-                return;
             }
 
             // /login
@@ -192,10 +192,9 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                     return;
                 }
                 const newData : User = JSON.parse(body.toString());
-                newData.id = `$user${crypto.randomBytes(4).toString('hex')}`;
+                newData.id = `user${crypto.randomBytes(4).toString('hex')}`;
                 newData.role = 'user';
                 newData.balance = 0;
-                console.log(newData);
                 await db.Create('users', newData);
                 res.writeHead(201, findHeader(reqPath)).end(JSON.stringify('Register Ok'));
                 return;
@@ -223,11 +222,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // DELETE
         if (method === 'DELETE') {
             // /users/{id} /cars/{id} // id is required
-            const auth = await authUser(req)
-            if(!auth) {
-                res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-                return;
-            }
+            // const auth = await authUser(req)
+            // if(!auth) {
+            //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+            //     return;
+            // }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars'){
                     let data : string = JSON.stringify(await db.Delete(reqPath, reqId));
@@ -239,8 +238,6 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
 
         // /sse
         if(reqPath === 'sse') {
-            const clients: ServerResponse[] = [];
-
             res.writeHead(200, {
                 "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",

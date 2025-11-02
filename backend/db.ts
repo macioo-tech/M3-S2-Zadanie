@@ -18,7 +18,7 @@ export async function Create<T extends keyof TypeMap> (type : T, newItem: TypeMa
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
         return ;
     } catch(e) {
-        return ;
+        throw new Error(`Create database error ${e}`);
     }
 }
 
@@ -41,7 +41,7 @@ export async function Read<T extends keyof TypeMap> (type : T, id? : string) : P
             }
         }
     } catch (e) {
-        return [];
+        throw new Error(`Read database error ${e}`);
     }
 }
 
@@ -62,7 +62,7 @@ export async function Update<T extends keyof TypeMap>(type : T, id: string, newI
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
         return ;
     } catch(e) {
-        return ;
+        throw new Error(`Update database error ${e}`);
     }
 }
 
@@ -76,6 +76,6 @@ export async function Delete<T extends keyof TypeMap>(type : T, id: string) : Pr
         await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
         return ;
     } catch(e) {
-        return ;
+        throw new Error(`Delete database error ${e}`);
     }
 }
