@@ -18,6 +18,13 @@
     "password": "QWERTY",
     "id": "$userb6549778",
     "role": "user",
-    "balance": 20000
+    "balance": 14000
+  },
+  {
+    "username": "adolf",
+    "password": "ASDFG",
+    "id": "$userbc300f0b",
+    "role": "user",
+    "balance": 0
   }
 ]

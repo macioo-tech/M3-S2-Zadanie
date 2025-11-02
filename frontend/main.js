@@ -153,6 +153,34 @@ async function loadCars() {
 }
 
 /**
+ * Ładuje listę uzytkownikow i wyświetla je w sekcji #users-list.
+ */
+async function loadUsers() {
+    try {
+        const res = await fetch('http://localhost:3000/users');
+        if (res.status === 200) {
+            const users = await res.json();
+            let html = '';
+            if (users.length === 0) {
+                html = 'Brak użytkowników.';
+            } else {
+                users.forEach(user => {
+                    html += `<div class="user-item">
+                     <strong>ID:</strong> ${user.id} |
+                     <strong>User:</strong> ${user.username} |
+                     <strong>Password:</strong> ${user.password} |
+                     <strong>Role:</strong> ${user.role}
+                     <strong>Balance:</strong> ${user.balance}
+                   </div>`;
+                });
+            }
+            document.getElementById('users-list').innerHTML = html;
+        }
+    } catch (err) {
+        showMessage('Błąd przy pobieraniu samochodów', 'error');
+    }
+}
+/**
  * Ustawia wszystkie nasłuchiwacze zdarzeń dla formularzy oraz routingu.
  */
 function setupEventListeners() {
@@ -299,6 +327,9 @@ function route() {
   }
   if (viewId === 'cars-view') {
     loadCars();
+  }
+  if (viewId === 'users-view') {
+    loadUsers();
   }
 }
 

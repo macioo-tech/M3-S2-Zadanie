@@ -10,6 +10,7 @@ import {setAuthCookie, generateToken, authUser} from "./auth.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
+const clients: ServerResponse[] = [];
 
 function findHeader (reqPath : string) : string {
     switch (path.extname(reqPath === undefined ? '/index.html' : reqPath).toLowerCase()) {
@@ -32,12 +33,16 @@ async function parseRequestBody(req: IncomingMessage): Promise<string> {
     });
 }
 
+function sseEvent(event:string, data:object):void {
+    const message = `data: ${JSON.stringify({ event, ...data })}\n\n`;
+    clients.forEach((client) => client.write(message));
+}
+
 // Main server API router handler
 export async function router(req: IncomingMessage, res: ServerResponse) {
     const method = req.method;
     const url = new URL(req.url!, `http://${req.headers.host}`)
     const [reqPath, reqId, optional ] = url.pathname.split("/").filter(Boolean);
- //   let data = '';
 
     try {
         // serve static files
@@ -68,12 +73,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         if (method === 'GET') {
             // /users/{id} /cars/{id} // id is optional
             // {id} is optional, if no id return all abjects
-        //    const user = authUser(req);
-        //    console.log(user);
-        //    if(!user) {
-        //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-        //        return;
-        //    }
+            // const auth = await authUser(req)
+            // if(!auth) {
+            //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+            //     return;
+            // }
             if(reqPath === 'users' || reqPath === 'cars') {
                 let data : string = JSON.stringify(await db.Read(reqPath, reqId));
                 res.writeHead(200, findHeader(reqPath)).end(data);
@@ -84,12 +88,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // PUT
         if (method === 'PUT') {
             // /users/id /cars/{id} // id is required
-        //    const user = authUser(req);
-        //    console.log(user);
-        //    if(!user) {
-        //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-        //        return;
-        //    }
+            // const auth = await authUser(req)
+            // if(!auth) {
+            //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+            //     return;
+            // }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars') {
                     const body = await parseRequestBody(req);
@@ -116,12 +119,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
 
             // /cars/{id}/buy // id is required
             if (reqPath === 'cars' && reqId && optional === 'buy') {
-            //    const user = authUser(req);
-            //    console.log(user);
-            //    if(!user) {
-            //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-            //        return;
-            //    }
+                // const auth = await authUser(req)
+                // if(!auth) {
+                //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                //     return;
+                // }
                 const body = await parseRequestBody(req);
                 const { buyerId } = JSON.parse(body.toString());
                 console.log(body);
@@ -152,6 +154,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 car.ownerId = buyer.id;
                 await db.Update('cars', car.id, car);
                 res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Car Bought'))
+                sseEvent('car-bought', { id: car.id, buyerId: buyer.id });
                 return;
             }
 
@@ -166,8 +169,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 const users : User[] = await db.Read('users');
                 const user = users.find((u) => u.username === username && u.password === password);
                 if(user) {
-                //    const token : string = generateToken(user.id);
-                //    setAuthCookie(res, token, 1);
+                   const token : string = generateToken(user.id);
+                   setAuthCookie(res, token, 1);
                     res.writeHead(200, findHeader(reqPath)).end(JSON.stringify(user))
                 } else {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'))
@@ -220,12 +223,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // DELETE
         if (method === 'DELETE') {
             // /users/{id} /cars/{id} // id is required
-        //    const user = authUser(req);
-        //    console.log(user);
-        //    if(!user) {
-        //        res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-        //        return;
-        //    }
+            const auth = await authUser(req)
+            if(!auth) {
+                res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                return;
+            }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars'){
                     let data : string = JSON.stringify(await db.Delete(reqPath, reqId));

@@ -3,8 +3,10 @@ import jwt from "jsonwebtoken"
 import {TokenPayload, User} from "./types.js";
 import * as db from "./db.js";
 
+const SECRET_KEY = process.env.SECRET_KEY || "73812393435fd78782f8320bf21d6114";
+
 function decodeToken(token: string): TokenPayload | null {
-    const SecretKey: string = process.env.SECRET_KEY as string;
+    const SecretKey: string = SECRET_KEY as string;
     try {
         return jwt.verify(token, SecretKey) as TokenPayload;
     } catch (error) {
@@ -25,8 +27,7 @@ function parseCookies(req: IncomingMessage): Record<string, string> {
 }
 
 export function generateToken(userId: string): string {
-    const SecretKey: string = process.env.SECRET_KEY as string;
-    console.log(process.env.SECRET_KEY)
+    const SecretKey: string = SECRET_KEY as string;
     const payload: TokenPayload = { userId };
     return jwt.sign(payload, SecretKey, { expiresIn: "1h" });
 }
@@ -38,15 +39,17 @@ export function setAuthCookie(res: ServerResponse, token: string, maxAge?: numbe
     );
 }
 
-export async function authUser (req : IncomingMessage ): Promise<User | null> {
+export async function authUser (req : IncomingMessage ): Promise<boolean> {
     const cookies = parseCookies(req);
     const token = cookies["authToken"];
     if (!token) {
-        return null;
+        return false;
     }
     const id = decodeToken(token);
     if (!id) {
-        return null;
+        return false;
     }
-    return await db.Read('users', id.userId);
+    const user = await db.Read('users', id.userId);
+    if (user) return true
+    return false;
 }
