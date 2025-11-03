@@ -1,11 +1,18 @@
-import { createServer } from 'http';
+import * as http from 'http'
+import {router} from "./routes.js";
+import path from "node:path";
 
-const PORT = 3000;
-const server = createServer(async (req, res) => {
-  res.end(JSON.stringify({ status: 'ok'}))
+const PORT = process.env.PORT || 3000;
 
-  // 1. Obsługa endpointów
-  // 2. Proste serwowanie plików statycznych z katalogu frontend (np. pod ścieżką /static/)
+const logger = (req : http.IncomingMessage, res : http.ServerResponse, next : Function) : void => {
+    console.log(`Server request ${req.method} ${req.url}`)
+    next();
+}
+
+const server = http.createServer(async (req, res) => {
+    logger(req, res, async () => {
+        await router(req, res)
+    })
 });
 
 server.listen(PORT, () => {

@@ -12,4 +12,13 @@ export interface User {
     price: number;
     ownerId: string;
   }
-  
+
+export type TypeMap = {
+    users: User;
+    cars: Car;
+};
+
+export interface TokenPayload {
+    userId: string;
+    exp?: number;
+}

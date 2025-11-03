@@ -1,10 +1,37 @@
 [
-    {
-      "id": "admin001",
-      "username": "admin",
-      "password": "admin123",
-      "role": "admin",
-      "balance": 10000
-    }
-  ]
-  
+  {
+    "id": "admin001",
+    "username": "admin",
+    "password": "admin123",
+    "role": "admin",
+    "balance": 4000
+  },
+  {
+    "username": "alojzysz",
+    "password": "QWERTYSa",
+    "id": "$usera2612295",
+    "role": "user",
+    "balance": 54000
+  },
+  {
+    "username": "alojzy",
+    "password": "QWERTY",
+    "id": "$userb6549778",
+    "role": "user",
+    "balance": 6400
+  },
+  {
+    "username": "adolf",
+    "password": "ASDFG",
+    "id": "$userbc300f0b",
+    "role": "user",
+    "balance": 0
+  },
+  {
+    "username": "nowyzform",
+    "password": "QWERTYUIOP",
+    "id": "useraadd1ba0",
+    "role": "user",
+    "balance": 0
+  }
+]

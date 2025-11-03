@@ -35,6 +35,9 @@ function renderNav() {
     document.getElementById('nav-profile').style.display = 'inline';
     document.getElementById('nav-cars').style.display = 'inline';
     document.getElementById('nav-buy').style.display = 'inline';
+    if (currentUser.role === 'admin') {
+      document.getElementById('nav-users').style.display = 'inline';
+    }
     document.getElementById('nav-logout').style.display = 'inline';
     document.getElementById('nav-login').style.display = 'none';
     document.getElementById('nav-register').style.display = 'none';
@@ -45,6 +48,7 @@ function renderNav() {
     document.getElementById('nav-profile').style.display = 'none';
     document.getElementById('nav-cars').style.display = 'none';
     document.getElementById('nav-buy').style.display = 'none';
+    document.getElementById('nav-users').style.display = 'none';
     document.getElementById('nav-logout').style.display = 'none';
     document.getElementById('nav-login').style.display = 'inline';
     document.getElementById('nav-register').style.display = 'inline';
@@ -59,23 +63,21 @@ function renderNav() {
  * – tablica wszystkich użytkowników. W tym przypadku wybieramy obiekt admina.
  */
 async function checkAuth() {
-  try {
-    const res = await fetch('http://localhost:3000/users');
-    if (res.status === 200) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        // Założenie: konto admina znajduje się wśród użytkowników i ma role 'admin'
-        currentUser = data.find(u => u.role === 'admin') || null;
-      } else {
-        currentUser = data;
-      }
-    } else {
-      currentUser = null;
+    try {
+        const res = await fetch('http://localhost:3000/me', {
+            method: 'POST',
+            credentials: 'include' // Important: send cookies with request
+        });
+        if (res.status === 200) {
+            const data = await res.json();
+            currentUser = data;
+        } else {
+            currentUser = null;
+        }
+    } catch (err) {
+        currentUser = null;
     }
-  } catch (err) {
-    currentUser = null;
-  }
-  renderNav();
+    renderNav();
 }
 
 /**
@@ -98,13 +100,15 @@ function showView(viewId) {
  */
 async function loadProfile() {
   try {
-    const res = await fetch('http://localhost:3000/users');
+      if (!currentUser) return;
+      const userId = currentUser.id;
+      const res = await fetch(`http://localhost:3000/users/${userId}`, {
+          credentials: 'include'
+      });
     if (res.status === 200) {
       const data = await res.json();
       let profile;
-      if (Array.isArray(data)) {
-        profile = data.find(u => u.role === 'admin') || null;
-      } else {
+      if (data) {
         profile = data;
       }
       if (profile) {
@@ -122,7 +126,9 @@ async function loadProfile() {
  */
 async function loadCars() {
   try {
-    const res = await fetch('http://localhost:3000/cars');
+      const res = await fetch('http://localhost:3000/cars', {
+          credentials: 'include'
+      });
     if (res.status === 200) {
       const cars = await res.json();
       let html = '';
@@ -146,6 +152,36 @@ async function loadCars() {
 }
 
 /**
+ * Ładuje listę uzytkownikow i wyświetla je w sekcji #users-list.
+ */
+async function loadUsers() {
+    try {
+        const res = await fetch('http://localhost:3000/users', {
+            credentials: 'include'
+        });
+        if (res.status === 200) {
+            const users = await res.json();
+            let html = '';
+            if (users.length === 0) {
+                html = 'Brak użytkowników.';
+            } else {
+                users.forEach(user => {
+                    html += `<div class="user-item">
+                     <strong>ID:</strong> ${user.id} |
+                     <strong>User:</strong> ${user.username} |
+                     <strong>Password:</strong> ${user.password} |
+                     <strong>Role:</strong> ${user.role}
+                     <strong>Balance:</strong> ${user.balance}
+                   </div>`;
+                });
+            }
+            document.getElementById('users-list').innerHTML = html;
+        }
+    } catch (err) {
+        showMessage('Błąd przy pobieraniu samochodów', 'error');
+    }
+}
+/**
  * Ustawia wszystkie nasłuchiwacze zdarzeń dla formularzy oraz routingu.
  */
 function setupEventListeners() {
@@ -163,6 +199,7 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       });
       const data = await res.json();
@@ -186,6 +223,7 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       });
       const data = await res.json();
@@ -209,13 +247,15 @@ function setupEventListeners() {
       const res = await fetch(`http://localhost:3000/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: newUsername, password: newPassword })
       });
       const data = await res.json();
       if (res.status === 200) {
+        const userId = data.id;
         showMessage('Profil zaktualizowany', 'success');
         await checkAuth();
-        loadProfile();
+        await loadProfile(userId);
       } else {
         showMessage(data.error || 'Błąd aktualizacji profilu', 'error');
       }
@@ -232,7 +272,8 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/cars', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, price })
+        credentials: 'include',
+        body: JSON.stringify({model, price})
       });
       const data = await res.json();
       if (res.status === 201) {
@@ -249,8 +290,13 @@ function setupEventListeners() {
   if (buyCarForm) {
     buyCarForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const userId = currentUser.id;
       const carId = document.getElementById('buyCarId').value;
-      const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST' });
+      const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({buyerId: userId}),
+      });
       const data = await res.json();
       if (res.status === 200) {
         showMessage('Samochód zakupiony', 'success');
@@ -263,30 +309,113 @@ function setupEventListeners() {
   }
 }
 
+    // Formularz usuwania użytkownika
+    const deleteUserForm = document.getElementById('deleteUserForm');
+    if (deleteUserForm) {
+        deleteUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('deleteUserId').value;
+            const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            });
+            const data = await res.json();
+            if (res.status === 200) {
+                showMessage('Użytkownik usunięty', 'success');
+                loadUsers();
+            } else {
+                showMessage(data.error || 'Błąd usunięcia użytkownika', 'error');
+            }
+        });
+    }
+
+    // Formularz edycji użytkownika
+    const editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    role: document.getElementById('editRole').value,
+                    balance: document.getElementById('balance').value,
+                }),
+            });
+            const data = await res.json();
+            if (res.status === 200) {
+                showMessage('Edycja użytkownika poprawna', 'success');
+                loadUsers();
+            } else {
+                showMessage(data.error || 'Błąd edycji użytkownika', 'error');
+            }
+        });
+    }
+
+    // Formularz dodawania użytkownika
+    const addNewUserForm = document.getElementById('addNewUserForm');
+    if (addNewUserForm) {
+        addNewUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch(`http://localhost:3000/register`, { method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                }),
+            });
+            const data = await res.json();
+            if (res.status === 200) {
+                showMessage('Użytkownik dodany', 'success');
+                loadUsers();
+            } else {
+                showMessage(data.error || 'Błąd dodania użytkownika', 'error');
+            }
+        });
+    }
+
 /**
  * Prosty router – na podstawie fragmentu adresu URL (hash) wyświetla odpowiedni widok.
  * Specjalnie obsługujemy #logout, aby "wylogować" użytkownika (symulacja).
  */
 function route() {
-  const hash = window.location.hash || '#home';
-  const viewId = hash.substring(1) + '-view';
+    const hash = window.location.hash || '#home';
+    const viewId = hash.substring(1) + '-view';
 
-  if (hash === '#logout') {
-    // "Wylogowanie" – resetujemy currentUser; w prawdziwej aplikacji warto by było mieć endpoint logout
-    currentUser = null;
-    renderNav();
-    showMessage('Wylogowano');
-    window.location.hash = '#home';
-    return;
-  }
+    if (hash === '#logout') {
+        // Secure logout - call server endpoint
+        fetch('http://localhost:3000/logout', {
+            method: 'POST',
+            credentials: 'include' // Important: send cookie to be cleared
+        }).then(async (res) => {
+            if (res.status === 200) {
+                currentUser = null;
+                renderNav();
+                showMessage('Wylogowano pomyślnie', 'success');
+                window.location.hash = '#home';
+            } else {
+                showMessage('Błąd wylogowania', 'error');
+            }
+        }).catch((err) => {
+            console.error('Logout error:', err);
+            showMessage('Błąd wylogowania', 'error');
+        });
+        return;
+    }
 
-  showView(viewId);
-  if (viewId === 'profile-view') {
-    loadProfile();
-  }
-  if (viewId === 'cars-view') {
-    loadCars();
-  }
+    showView(viewId);
+    if (viewId === 'profile-view') {
+        loadProfile();
+    }
+    if (viewId === 'cars-view') {
+        loadCars();
+    }
+    if (viewId === 'users-view') {
+        loadUsers();
+    }
 }
 
 /**
@@ -296,7 +425,7 @@ function setupSSE() {
   const evtSource = new EventSource('/sse');
   evtSource.onmessage = (event) => {
     const msg = JSON.parse(event.data);
-    showNotification(`SSE: ${msg.event} - Car ID: ${msg.carId}, Buyer ID: ${msg.buyerId}`);
+    showNotification(`SSE: ${msg.event} - Car ID: ${msg.id}, Buyer ID: ${msg.buyerId}`);
   };
 }
 
