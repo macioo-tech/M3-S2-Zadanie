@@ -190,6 +190,28 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 return;
             }
 
+            // /logout
+            if(reqPath === 'logout') {
+                // Clear the authentication cookie
+                res.setHeader(
+                    'Set-Cookie',
+                    'token=; HttpOnly; Secure; Path=/; Max-Age=0'
+                );
+                res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: 'Logged out successfully' }));
+                return;
+            }
+
+            // /me -  (session refresh)
+            if(reqPath === 'me') {
+                const user = await authUser(req);
+                if (!user) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'Not authenticated' }));
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(user));
+                return;
+            }
+
             //  /register
             if(reqPath === 'register') {
                 const body = await parseRequestBody(req);

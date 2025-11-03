@@ -62,20 +62,15 @@ function renderNav() {
  * Dla zwykłych userów zwracany jest obiekt, a dla admina (ze względu na uprawnienia)
  * – tablica wszystkich użytkowników. W tym przypadku wybieramy obiekt admina.
  */
-async function checkAuth(userId) {
-    if (userId === undefined) {
-        renderNav();
-        return;
-    }
-
+async function checkAuth() {
     try {
-        const res = await fetch(`http://localhost:3000/users/${userId}`);
+        const res = await fetch('http://localhost:3000/me', {
+            method: 'POST',
+            credentials: 'include' // Important: send cookies with request
+        });
         if (res.status === 200) {
             const data = await res.json();
-
-            if (data) {
-                currentUser = data;
-            }
+            currentUser = data;
         } else {
             currentUser = null;
         }
@@ -103,10 +98,13 @@ function showView(viewId) {
 /**
  * Ładuje dane profilu aktualnie zalogowanego użytkownika.
  */
-async function loadProfile(userId) {
+async function loadProfile() {
   try {
-    if (!userId)  return;
-    const res = await fetch(`http://localhost:3000/users/${userId}`);
+      if (!currentUser) return;
+      const userId = currentUser.id;
+      const res = await fetch(`http://localhost:3000/users/${userId}`, {
+          credentials: 'include'
+      });
     if (res.status === 200) {
       const data = await res.json();
       let profile;
@@ -128,7 +126,9 @@ async function loadProfile(userId) {
  */
 async function loadCars() {
   try {
-    const res = await fetch('http://localhost:3000/cars');
+      const res = await fetch('http://localhost:3000/cars', {
+          credentials: 'include'
+      });
     if (res.status === 200) {
       const cars = await res.json();
       let html = '';
@@ -156,7 +156,9 @@ async function loadCars() {
  */
 async function loadUsers() {
     try {
-        const res = await fetch('http://localhost:3000/users');
+        const res = await fetch('http://localhost:3000/users', {
+            credentials: 'include'
+        });
         if (res.status === 200) {
             const users = await res.json();
             let html = '';
@@ -197,13 +199,13 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       });
       const data = await res.json();
       if (res.status === 200) {
-        const userId = data.id;
         showMessage('Zalogowano pomyślnie', 'success');
-        await checkAuth(userId);
+        await checkAuth();
         window.location.hash = '#home';
       } else {
         showMessage(data.error || 'Błąd logowania', 'error');
@@ -221,6 +223,7 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username, password })
       });
       const data = await res.json();
@@ -244,13 +247,14 @@ function setupEventListeners() {
       const res = await fetch(`http://localhost:3000/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: newUsername, password: newPassword })
       });
       const data = await res.json();
       if (res.status === 200) {
         const userId = data.id;
         showMessage('Profil zaktualizowany', 'success');
-        await checkAuth(userId);
+        await checkAuth();
         await loadProfile(userId);
       } else {
         showMessage(data.error || 'Błąd aktualizacji profilu', 'error');
@@ -268,6 +272,7 @@ function setupEventListeners() {
       const res = await fetch('http://localhost:3000/cars', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({model, price})
       });
       const data = await res.json();
@@ -289,13 +294,14 @@ function setupEventListeners() {
       const carId = document.getElementById('buyCarId').value;
       const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({buyerId: userId}),
       });
       const data = await res.json();
       if (res.status === 200) {
         showMessage('Samochód zakupiony', 'success');
         loadCars();
-        await checkAuth(userId); // aktualizacja salda
+        await checkAuth(); // aktualizacja salda
       } else {
         showMessage(data.error || 'Błąd zakupu samochodu', 'error');
       }
@@ -311,6 +317,7 @@ function setupEventListeners() {
             const userId = document.getElementById('deleteUserId').value;
             const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
             });
             const data = await res.json();
             if (res.status === 200) {
@@ -329,6 +336,7 @@ function setupEventListeners() {
             e.preventDefault();
             const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     username: document.getElementById('username').value,
                     password: document.getElementById('password').value,
@@ -353,6 +361,7 @@ function setupEventListeners() {
             e.preventDefault();
             const res = await fetch(`http://localhost:3000/register`, { method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     username: document.getElementById('username').value,
                     password: document.getElementById('password').value,
@@ -373,28 +382,40 @@ function setupEventListeners() {
  * Specjalnie obsługujemy #logout, aby "wylogować" użytkownika (symulacja).
  */
 function route() {
-  const hash = window.location.hash || '#home';
-  const viewId = hash.substring(1) + '-view';
+    const hash = window.location.hash || '#home';
+    const viewId = hash.substring(1) + '-view';
 
-  if (hash === '#logout') {
-    // "Wylogowanie" – resetujemy currentUser; w prawdziwej aplikacji warto by było mieć endpoint logout
-    currentUser = null;
-    renderNav();
-    showMessage('Wylogowano');
-    window.location.hash = '#home';
-    return;
-  }
+    if (hash === '#logout') {
+        // Secure logout - call server endpoint
+        fetch('http://localhost:3000/logout', {
+            method: 'POST',
+            credentials: 'include' // Important: send cookie to be cleared
+        }).then(async (res) => {
+            if (res.status === 200) {
+                currentUser = null;
+                renderNav();
+                showMessage('Wylogowano pomyślnie', 'success');
+                window.location.hash = '#home';
+            } else {
+                showMessage('Błąd wylogowania', 'error');
+            }
+        }).catch((err) => {
+            console.error('Logout error:', err);
+            showMessage('Błąd wylogowania', 'error');
+        });
+        return;
+    }
 
-  showView(viewId);
-  if (viewId === 'profile-view') {
-    loadProfile(currentUser?.id);
-  }
-  if (viewId === 'cars-view') {
-    loadCars();
-  }
-  if (viewId === 'users-view') {
-    loadUsers();
-  }
+    showView(viewId);
+    if (viewId === 'profile-view') {
+        loadProfile();
+    }
+    if (viewId === 'cars-view') {
+        loadCars();
+    }
+    if (viewId === 'users-view') {
+        loadUsers();
+    }
 }
 
 /**
@@ -409,7 +430,7 @@ function setupSSE() {
 }
 
 window.addEventListener('load', async () => {
-  await checkAuth(currentUser?.id);
+  await checkAuth();
   setupEventListeners();
   setupSSE();
 });
