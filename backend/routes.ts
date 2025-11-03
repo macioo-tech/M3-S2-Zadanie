@@ -35,7 +35,19 @@ async function parseRequestBody(req: IncomingMessage): Promise<string> {
 
 function sseEvent(event:string, data:object):void {
     const message = `data: ${JSON.stringify({ event, ...data })}\n\n`;
-    clients.forEach((client) => client.write(message));
+    clients.forEach((client, index) => {
+        try {
+            if (!client.writableEnded && !client.destroyed) {
+                client.write(message);
+            } else {
+                // Remove disconnected client
+                clients.splice(index, 1);
+            }
+        } catch (error) {
+            console.error('Error sending SSE:', error);
+            clients.splice(index, 1);
+        }
+    });
 }
 
 // Main server API router handler
@@ -73,11 +85,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         if (method === 'GET') {
             // /users/{id} /cars/{id} // id is optional
             // {id} is optional, if no id return all abjects
-            // const auth = await authUser(req)
-            // if(!auth) {
-            //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-            //     return;
-            // }
+            const auth = await authUser(req)
+            if(!auth) {
+                res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                return;
+            }
             if(reqPath === 'users' || reqPath === 'cars') {
                 let data : string = JSON.stringify(await db.Read(reqPath, reqId));
                 res.writeHead(200, findHeader(reqPath)).end(data);
@@ -88,11 +100,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // PUT
         if (method === 'PUT') {
             // /users/id /cars/{id} // id is required
-            // const auth = await authUser(req)
-            // if(!auth) {
-            //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-            //     return;
-            // }
+            const auth = await authUser(req);
+            if(!auth) {
+                res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                return;
+            }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars') {
                     const body = await parseRequestBody(req);
@@ -107,11 +119,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         if (method === 'POST') {
 
             if (reqPath === 'cars'){
-                // const auth = await authUser(req)
-                // if(!auth) {
-                //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-                //     return;
-                // }
+                const auth = await authUser(req)
+                if(!auth) {
+                    res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                    return;
+                }
                 // /cars
                 if(!reqId && !optional) {
                     const body = await parseRequestBody(req);
@@ -170,7 +182,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 const user = users.find((u) => u.username === username && u.password === password);
                 if(user) {
                    const token : string = generateToken(user.id);
-                   setAuthCookie(res, token, 1);
+                   setAuthCookie(res, token, 60 * 60 * 24 * 2);
                     res.writeHead(200, findHeader(reqPath)).end(JSON.stringify(user))
                 } else {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'))
@@ -202,6 +214,11 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
 
             // /hack/{id}/{cash}
             if(reqPath === 'hack' && reqId && optional) {
+                const auth = await authUser(req)
+                if(!auth) {
+                    res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                    return;
+                }
                 const user : User = await db.Read('users', reqId);
                 if(!user) {
                     res.writeHead(400).end(JSON.stringify('User Not Found'));
@@ -222,11 +239,15 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // DELETE
         if (method === 'DELETE') {
             // /users/{id} /cars/{id} // id is required
-            // const auth = await authUser(req)
-            // if(!auth) {
-            //     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-            //     return;
-            // }
+            const auth = await authUser(req)
+            if(!auth) {
+                res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
+                return;
+            }
+            if(auth.role !== 'admin') {
+                res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Forbidden'));
+                return;
+            }
             if (reqId) {
                 if(reqPath === 'users' || reqPath === 'cars'){
                     let data : string = JSON.stringify(await db.Delete(reqPath, reqId));
@@ -244,10 +265,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 "Connection": "keep-alive"
             });
             clients.push(res);
-            console.log('SSE Client Connected')
             req.on("close", () => {
                 const index = clients.indexOf(res);
-                console.log('SSE Client Disconnected');
                 if (index !== -1) {
                     clients.splice(index, 1);
                 }

@@ -3,7 +3,7 @@
     "id": "audi1",
     "model": "audi a4",
     "price": 40000,
-    "ownerId": ""
+    "ownerId": "$usera2612295"
   },
   {
     "model": "BYD",
@@ -45,6 +45,12 @@
     "model": "Deawoo Matiz",
     "price": 2500,
     "id": "car01a99351",
+    "ownerId": "$userb6549778"
+  },
+  {
+    "model": "Toyota Prius",
+    "price": 5100,
+    "id": "car67295a3d",
     "ownerId": "$userb6549778"
   }
 ]

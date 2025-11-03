@@ -72,7 +72,6 @@ async function checkAuth(userId) {
         const res = await fetch(`http://localhost:3000/users/${userId}`);
         if (res.status === 200) {
             const data = await res.json();
-            console.log(data);
 
             if (data) {
                 currentUser = data;
@@ -304,6 +303,71 @@ function setupEventListeners() {
   }
 }
 
+    // Formularz usuwania użytkownika
+    const deleteUserForm = document.getElementById('deleteUserForm');
+    if (deleteUserForm) {
+        deleteUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('deleteUserId').value;
+            const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await res.json();
+            if (res.status === 200) {
+                showMessage('Użytkownik usunięty', 'success');
+                loadUsers();
+            } else {
+                showMessage(data.error || 'Błąd usunięcia użytkownika', 'error');
+            }
+        });
+    }
+
+    // Formularz edycji użytkownika
+    const editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    role: document.getElementById('editRole').value,
+                    balance: document.getElementById('balance').value,
+                }),
+            });
+            const data = await res.json();
+            if (res.status === 200) {
+                showMessage('Edycja użytkownika poprawna', 'success');
+                loadUsers();
+            } else {
+                showMessage(data.error || 'Błąd edycji użytkownika', 'error');
+            }
+        });
+    }
+
+    // Formularz dodawania użytkownika
+    const addNewUserForm = document.getElementById('addNewUserForm');
+    if (addNewUserForm) {
+        addNewUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch(`http://localhost:3000/register`, { method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                }),
+            });
+            const data = await res.json();
+            if (res.status === 200) {
+                showMessage('Użytkownik dodany', 'success');
+                loadUsers();
+            } else {
+                showMessage(data.error || 'Błąd dodania użytkownika', 'error');
+            }
+        });
+    }
+
 /**
  * Prosty router – na podstawie fragmentu adresu URL (hash) wyświetla odpowiedni widok.
  * Specjalnie obsługujemy #logout, aby "wylogować" użytkownika (symulacja).
@@ -340,7 +404,7 @@ function setupSSE() {
   const evtSource = new EventSource('/sse');
   evtSource.onmessage = (event) => {
     const msg = JSON.parse(event.data);
-    showNotification(`SSE: ${msg.event} - Car ID: ${msg.carId}, Buyer ID: ${msg.buyerId}`);
+    showNotification(`SSE: ${msg.event} - Car ID: ${msg.id}, Buyer ID: ${msg.buyerId}`);
   };
 }
 

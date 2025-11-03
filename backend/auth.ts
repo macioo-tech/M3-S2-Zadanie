@@ -29,12 +29,12 @@ function parseCookies(req: IncomingMessage): Record<string, string> {
 export function generateToken(userId: string): string {
     const SecretKey: string = SECRET_KEY as string;
     const payload: TokenPayload = { userId };
-    return jwt.sign(payload, SecretKey, { expiresIn: "1h" });
+    return jwt.sign(payload, SecretKey, { expiresIn: "48h" });
 }
 
 export function setAuthCookie(res: ServerResponse, token: string, maxAge?: number): void {
     res.setHeader(
-        "set-cookie",
+        "Set-Cookie",
         `token=${token}; HttpOnly; Secure; Path=/; ${maxAge ? `Max-Age=${maxAge}` : ""}`
     );
 }
