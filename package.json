@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --watch --preserveWatchOutput",
     "dev:nodemon": "nodemon",
-    "dev:node": "node --watch ./dist/index.js"
+    "dev:node": "node --watch ./dist/index.js",
+    "dev:nodeenv": "node --env-file .env --watch ./dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -23,9 +24,11 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.9.1",
+    "@types/pg": "^8.15.6",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.2",
     "nodemon": "^3.1.10",
+    "pg": "^8.16.3",
     "ts-node": "^10.9.2"
   }
 }
