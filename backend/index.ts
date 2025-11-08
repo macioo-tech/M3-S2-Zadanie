@@ -9,7 +9,7 @@ const pool = new Pool({
   host: process.env.POSTGRES_HOST,
   database: process.env.POSTGRES_DB,
   password: process.env.POSTGRES_PASSWORD,
-  port: process.env.POSTGRES_PORT,
+  port: parseInt(process.env.POSTGRES_PORT as string, 10)
 });
 
 async function testConnection(): Promise<void> {
@@ -63,7 +63,7 @@ const logger = (req: http.IncomingMessage, res: http.ServerResponse, next: Funct
 
 const server = http.createServer(async (req, res) => {
   logger(req, res, async () => {
-    await router(req, res)
+    await router(req, res, pool)
   })
 });
 
