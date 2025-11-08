@@ -12,16 +12,22 @@ const DB_DIR = path.join(__dirname, '..', 'db');
 
 //CRUD implementation
 //Create
-export async function Create<T extends keyof TypeMap>(type: T, newItem: TypeMap[T]): Promise<void> {
-  const fileDB: string = path.join(DB_DIR, `${type}.json`);
-  let data: TypeMap[T][] = [];
+export async function Create<T extends keyof TypeMap>(type: T, newItem: TypeMap[T], pool: Pool, res: ServerResponse): Promise<void> {
   try {
-    data = JSON.parse(await fs.readFile(fileDB, "utf8"));
-    data.push(newItem);
-    await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
-    return;
-  } catch (e) {
-    throw new Error(`Create database error ${e}`);
+    const keys = Object.keys(newItem);
+    const values: string = keys.map((_, i) => `${i + 1}`).join(', ');
+    const data: QueryResult = await pool.query(`INSERT INTO ${type} ${keys.join(', ')}
+    VALUES (${values}) RETURNING *`)
+    sendJSON(res, 201, {
+      success: true,
+      data: data.rows,
+      message: 'success'
+    })
+  } catch (error) {
+    sendJSON(res, 500, {
+      success: false,
+      message: `❌database error while creating ${type} ${error}`,
+    })
   }
 }
 
@@ -39,7 +45,7 @@ export async function Read<T extends keyof TypeMap>(type: T, pool: Pool, res: Se
   } catch (error) {
     sendJSON(res, 500, {
       success: false,
-      message: `database error while reading ${type} ${error}`,
+      message: `❌database error while reading ${type} ${error}`,
     })
   }
 }

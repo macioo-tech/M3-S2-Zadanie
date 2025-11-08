@@ -77,21 +77,13 @@ export async function router(req: IncomingMessage, res: ServerResponse, pool: Po
 
     // POST
     if (method === 'POST') {
-
       if (reqPath === 'cars') {
-        const auth = await authUser(req)
-        if (!auth) {
-          res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
-          return;
-        }
+        if (!await checkAuth(req, res)) return
         // /cars
         if (!reqId && !optional) {
           const body = await parseBody(req);
           const newData: Car = JSON.parse(body.toString());
-          newData.id = `car${crypto.randomBytes(4).toString('hex')}`;
-          newData.ownerId = '';
-          await db.Create(reqPath, newData);
-          res.writeHead(201, findHeader(reqPath)).end(JSON.stringify(newData));
+          await db.Create(reqPath, newData, pool, res);
           return;
         }
         // /cars/{id}/buy // id is required
@@ -135,9 +127,10 @@ export async function router(req: IncomingMessage, res: ServerResponse, pool: Po
         const body = await parseBody(req);
         const {username, password} = JSON.parse(body.toString());
         if (!username || !password) {
-          res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'));
+          sendJSON(res, 400, {error: '❌Invalid Username Or Password'});
           return;
         }
+        const data = db.Read('users', pool, res)
         const users: User[] = await db.Read('users');
         const user = users.find((u) => u.username === username && u.password === password);
         if (user) {
