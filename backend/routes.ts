@@ -12,12 +12,16 @@ const __dirname = path.dirname(__filename);
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 const clients: ServerResponse[] = [];
 
-function findHeader (reqPath : string) : string {
+function findHeader(reqPath: string): string {
     switch (path.extname(reqPath === undefined ? '/index.html' : reqPath).toLowerCase()) {
-        case '.html': return 'text/html';
-        case '.css': return 'text/css';
-        case '.js': return 'application/javascript';
-        default: return 'application/json';
+        case '.html':
+            return 'text/html';
+        case '.css':
+            return 'text/css';
+        case '.js':
+            return 'application/javascript';
+        default:
+            return 'application/json';
     }
 }
 
@@ -33,8 +37,8 @@ async function parseRequestBody(req: IncomingMessage): Promise<string> {
     });
 }
 
-function sseEvent(event:string, data:object):void {
-    const message = `data: ${JSON.stringify({ event, ...data })}\n\n`;
+function sseEvent(event: string, data: object): void {
+    const message = `data: ${JSON.stringify({event, ...data})}\n\n`;
     clients.forEach((client, index) => {
         try {
             if (!client.writableEnded && !client.destroyed) {
@@ -54,11 +58,11 @@ function sseEvent(event:string, data:object):void {
 export async function router(req: IncomingMessage, res: ServerResponse) {
     const method = req.method;
     const url = new URL(req.url!, `http://${req.headers.host}`)
-    const [reqPath, reqId, optional ] = url.pathname.split("/").filter(Boolean);
+    const [reqPath, reqId, optional] = url.pathname.split("/").filter(Boolean);
 
     try {
         // serve static files
-        if(reqPath === undefined ||
+        if (reqPath === undefined ||
             reqPath === 'index.html' ||
             reqPath === 'style.css' ||
             reqPath === 'main.js') {
@@ -86,12 +90,12 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             // /users/{id} /cars/{id} // id is optional
             // {id} is optional, if no id return all abjects
             const auth = await authUser(req)
-            if(!auth) {
+            if (!auth) {
                 res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
                 return;
             }
-            if(reqPath === 'users' || reqPath === 'cars') {
-                let data : string = JSON.stringify(await db.Read(reqPath, reqId));
+            if (reqPath === 'users' || reqPath === 'cars') {
+                let data: string = JSON.stringify(await db.Read(reqPath, reqId));
                 res.writeHead(200, findHeader(reqPath)).end(data);
                 return;
             }
@@ -101,12 +105,12 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         if (method === 'PUT') {
             // /users/id /cars/{id} // id is required
             const auth = await authUser(req);
-            if(!auth) {
+            if (!auth) {
                 res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
                 return;
             }
             if (reqId) {
-                if(reqPath === 'users' || reqPath === 'cars') {
+                if (reqPath === 'users' || reqPath === 'cars') {
                     const body = await parseRequestBody(req);
                     await db.Update(reqPath, reqId, JSON.parse(body.toString()));
                     res.writeHead(200, findHeader(reqPath)).end(body);
@@ -118,16 +122,16 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         // POST
         if (method === 'POST') {
 
-            if (reqPath === 'cars'){
+            if (reqPath === 'cars') {
                 const auth = await authUser(req)
-                if(!auth) {
+                if (!auth) {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
                     return;
                 }
                 // /cars
-                if(!reqId && !optional) {
+                if (!reqId && !optional) {
                     const body = await parseRequestBody(req);
-                    const newData : Car = JSON.parse(body.toString());
+                    const newData: Car = JSON.parse(body.toString());
                     newData.id = `car${crypto.randomBytes(4).toString('hex')}`;
                     newData.ownerId = '';
                     await db.Create(reqPath, newData);
@@ -137,13 +141,13 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                 // /cars/{id}/buy // id is required
                 if (reqId && optional === 'buy') {
                     const body = await parseRequestBody(req);
-                    const { buyerId } = JSON.parse(body.toString());
-                    if(!buyerId) {
+                    const {buyerId} = JSON.parse(body.toString());
+                    if (!buyerId) {
                         res.writeHead(400).end(JSON.stringify('Incorrect Username'));
                         return;
                     }
-                    const car : Car = await db.Read('cars', reqId)
-                    if(!car) {
+                    const car: Car = await db.Read('cars', reqId)
+                    if (!car) {
                         res.writeHead(400).end(JSON.stringify('Car Not Found'));
                         return;
                     }
@@ -151,8 +155,8 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                         res.writeHead(400).end(JSON.stringify('Car Is Owned'));
                         return;
                     }
-                    const buyer : User = await db.Read('users', buyerId)
-                    if(!buyer) {
+                    const buyer: User = await db.Read('users', buyerId)
+                    if (!buyer) {
                         res.writeHead(400).end(JSON.stringify('User Not Found'));
                         return;
                     }
@@ -165,24 +169,24 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                     car.ownerId = buyer.id;
                     await db.Update('cars', car.id, car);
                     res.writeHead(200, findHeader(reqPath)).end(JSON.stringify('Car Bought'))
-                    sseEvent('car-bought', { id: car.id, buyerId: buyer.id });
+                    sseEvent('car-bought', {id: car.id, buyerId: buyer.id});
                     return;
                 }
             }
 
             // /login
-            if(reqPath === 'login') {
+            if (reqPath === 'login') {
                 const body = await parseRequestBody(req);
-                const { username, password } = JSON.parse(body.toString());
-                if(!username || !password) {
+                const {username, password} = JSON.parse(body.toString());
+                if (!username || !password) {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'));
                     return;
                 }
-                const users : User[] = await db.Read('users');
+                const users: User[] = await db.Read('users');
                 const user = users.find((u) => u.username === username && u.password === password);
-                if(user) {
-                   const token : string = generateToken(user.id);
-                   setAuthCookie(res, token, 60 * 60 * 24 * 2);
+                if (user) {
+                    const token: string = generateToken(user.id);
+                    setAuthCookie(res, token, 60 * 60 * 24 * 2);
                     res.writeHead(200, findHeader(reqPath)).end(JSON.stringify(user))
                 } else {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Invalid Username Or Password'))
@@ -191,31 +195,31 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             }
 
             // /logout
-            if(reqPath === 'logout') {
+            if (reqPath === 'logout') {
                 // Clear the authentication cookie
                 res.setHeader(
                     'Set-Cookie',
                     'token=; HttpOnly; Secure; Path=/; Max-Age=0'
                 );
-                res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ message: 'Logged out successfully' }));
+                res.writeHead(200, {'Content-Type': 'application/json'}).end(JSON.stringify({message: 'Logged out successfully'}));
                 return;
             }
 
             // /me -  (session refresh)
-            if(reqPath === 'me') {
+            if (reqPath === 'me') {
                 const user = await authUser(req);
                 if (!user) {
-                    res.writeHead(401, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'Not authenticated' }));
+                    res.writeHead(401, {'Content-Type': 'application/json'}).end(JSON.stringify({error: 'Not authenticated'}));
                     return;
                 }
-                res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(user));
+                res.writeHead(200, {'Content-Type': 'application/json'}).end(JSON.stringify(user));
                 return;
             }
 
             //  /register
-            if(reqPath === 'register') {
+            if (reqPath === 'register') {
                 const body = await parseRequestBody(req);
-                const { username, password } = JSON.parse(body.toString());
+                const {username, password} = JSON.parse(body.toString());
                 if (!username || !password) {
                     res.writeHead(400).end(JSON.stringify('Invalid Username Or Password'));
                     return;
@@ -225,7 +229,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Username Already Registered'));
                     return;
                 }
-                const newData : User = JSON.parse(body.toString());
+                const newData: User = JSON.parse(body.toString());
                 newData.id = `user${crypto.randomBytes(4).toString('hex')}`;
                 newData.role = 'user';
                 newData.balance = 0;
@@ -235,19 +239,19 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
             }
 
             // /hack/{id}/{cash}
-            if(reqPath === 'hack' && reqId && optional) {
+            if (reqPath === 'hack' && reqId && optional) {
                 const auth = await authUser(req)
-                if(!auth) {
+                if (!auth) {
                     res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
                     return;
                 }
-                const user : User = await db.Read('users', reqId);
-                if(!user) {
+                const user: User = await db.Read('users', reqId);
+                if (!user) {
                     res.writeHead(400).end(JSON.stringify('User Not Found'));
                     return;
                 }
                 const cash = parseInt(optional);
-                if(isNaN(cash)) {
+                if (isNaN(cash)) {
                     res.writeHead(400).end(JSON.stringify('Cash Is Not A Number'));
                     return;
                 }
@@ -262,17 +266,17 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         if (method === 'DELETE') {
             // /users/{id} /cars/{id} // id is required
             const auth = await authUser(req)
-            if(!auth) {
+            if (!auth) {
                 res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('User Not Authenticated'));
                 return;
             }
-            if(auth.role !== 'admin') {
+            if (auth.role !== 'admin') {
                 res.writeHead(400, findHeader(reqPath)).end(JSON.stringify('Forbidden'));
                 return;
             }
             if (reqId) {
-                if(reqPath === 'users' || reqPath === 'cars'){
-                    let data : string = JSON.stringify(await db.Delete(reqPath, reqId));
+                if (reqPath === 'users' || reqPath === 'cars') {
+                    let data: string = JSON.stringify(await db.Delete(reqPath, reqId));
                     res.writeHead(200, findHeader(reqPath)).end(data);
                     return;
                 }
@@ -280,7 +284,7 @@ export async function router(req: IncomingMessage, res: ServerResponse) {
         }
 
         // /sse
-        if(reqPath === 'sse') {
+        if (reqPath === 'sse') {
             res.writeHead(200, {
                 "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",
