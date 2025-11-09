@@ -38,7 +38,7 @@ export async function Read<T extends keyof TypeMap>( res: ServerResponse,
     const setQueryOptions: string = id ? `WHERE id = ${ id }` : '';
     const data: QueryResult = await pool.query( `
         SELECT *
-            FROM ${ type } ${ setQueryOptions }` );
+            FROM ${ type } $${ setQueryOptions }` );
 
     sendJSON( res, 200, {
       data: data.rows
@@ -58,13 +58,23 @@ export async function Update<T extends keyof TypeMap>( res: ServerResponse,
                                                        id: number,
                                                        newData: TypeMap[T] ): Promise<void> {
   try {
-    const setQueryKeys: string = Object.keys( newData ).join( ', ' );
-    const setQueryValues: string = Object.keys( newData ).map(
-      ( _, i ) => `${ i + 1 }` ).join( ', ' );
+    const keys = Object.keys( newData );
+    const values = Object.values( newData );
+
+    if ( keys.length === 0 ) {
+      sendJSON( res, 400, {
+        message: `❌ Invalid data for ${ type }`,
+      } )
+    }
+
+    const setQuery = keys.map(
+      ( key, i ) => `${ key } = $${ i + 1 }` )
+      .join( ', ' );
+
 
     const data: QueryResult = await pool.query( `
         UPDATE ${ type }
-        SET ${ setQueryKeys } = ${ setQueryValues }
+        SET ${ setQuery }
             WHERE id = $${ id }` )
 
     sendJSON( res, 200, {
