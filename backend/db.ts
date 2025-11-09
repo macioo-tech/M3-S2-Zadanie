@@ -1,86 +1,101 @@
-import fs from "node:fs/promises"
-import path from "node:path";
-import {fileURLToPath} from "node:url";
-import {TypeMap} from "./types.js";
-import {Pool, QueryResult} from 'pg';
-import {sendJSON} from './helpers.js';
-import {ServerResponse} from 'node:http';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DB_DIR = path.join(__dirname, '..', 'db');
+import { ServerResponse } from 'node:http';
+import { Pool, QueryResult } from 'pg';
+import { TypeMap } from "./types.js";
+import { sendJSON } from './helpers.js';
 
 //CRUD implementation
 //Create
-export async function Create<T extends keyof TypeMap>(type: T, newItem: TypeMap[T], pool: Pool, res: ServerResponse): Promise<void> {
+export async function Create<T extends keyof TypeMap>( res: ServerResponse,
+                                                       pool: Pool,
+                                                       type: T,
+                                                       newData: TypeMap[T] ): Promise<void> {
   try {
-    const keys = Object.keys(newItem);
-    const values: string = keys.map((_, i) => `${i + 1}`).join(', ');
-    const data: QueryResult = await pool.query(`INSERT INTO ${type} ${keys.join(', ')}
-    VALUES (${values}) RETURNING *`)
-    sendJSON(res, 201, {
-      success: true,
-      data: data.rows,
-      message: 'success'
-    })
-  } catch (error) {
-    sendJSON(res, 500, {
-      success: false,
-      message: `❌database error while creating ${type} ${error}`,
-    })
+    const setQueryKeys: string = Object.keys( newData ).join( ', ' );
+    const setQueryValues: string = Object.keys( newData ).map(
+      ( _, i ) => `${ i + 1 }` ).join( ', ' );
+
+    const data: QueryResult = await pool.query( `
+        INSERT INTO ${ type } ${ setQueryKeys }
+        VALUES (${ setQueryValues })` )
+
+    sendJSON( res, 201, {
+      data: data.rows
+    } )
+  } catch ( error ) {
+    sendJSON( res, 500, {
+      data: [],
+      message: `❌ Database error while creating ${ type } ${ error }`,
+    } )
   }
 }
 
 // Read
-export async function Read<T extends keyof TypeMap>(type: T, pool: Pool, res: ServerResponse, id?: string): Promise<void> {
+export async function Read<T extends keyof TypeMap>( res: ServerResponse,
+                                                     pool: Pool,
+                                                     type: T,
+                                                     id?: number ): Promise<void> {
   try {
-    const optionalQuery: string = id ? `WHERE id = ${id}` : '';
-    const data: QueryResult = await pool.query(`SELECT *
-                                                    FROM ${type} ${optionalQuery}`);
-    sendJSON(res, 200, {
-      success: true,
-      data: data.rows,
-      message: 'success'
-    })
-  } catch (error) {
-    sendJSON(res, 500, {
-      success: false,
-      message: `❌database error while reading ${type} ${error}`,
-    })
+    const setQueryOptions: string = id ? `WHERE id = ${ id }` : '';
+    const data: QueryResult = await pool.query( `
+        SELECT *
+            FROM ${ type } ${ setQueryOptions }` );
+
+    sendJSON( res, 200, {
+      data: data.rows
+    } )
+  } catch ( error ) {
+    sendJSON( res, 500, {
+      data: [],
+      message: `❌ Database error while reading ${ type } ${ error }`,
+    } )
   }
 }
 
 // Update
-export async function Update<T extends keyof TypeMap>(type: T, id: string, newItem: TypeMap[T]): Promise<void> {
-  const fileDB: string = path.join(DB_DIR, `${type}.json`);
-  let data: TypeMap[T][] = [];
+export async function Update<T extends keyof TypeMap>( res: ServerResponse,
+                                                       pool: Pool,
+                                                       type: T,
+                                                       id: number,
+                                                       newData: TypeMap[T] ): Promise<void> {
   try {
-    data = JSON.parse(await fs.readFile(fileDB, "utf8"));
-    const index = data.findIndex(i => (i as any).id === id);
-    if (index === -1) {
-      return;
-    }
-    const updatedItem: TypeMap[T] = {...data[index], ...newItem};
-    (updatedItem as any).id = id;
-    data[index] = updatedItem;
+    const setQueryKeys: string = Object.keys( newData ).join( ', ' );
+    const setQueryValues: string = Object.keys( newData ).map(
+      ( _, i ) => `${ i + 1 }` ).join( ', ' );
 
-    await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
-    return;
-  } catch (e) {
-    throw new Error(`Update database error ${e}`);
+    const data: QueryResult = await pool.query( `
+        UPDATE ${ type }
+        SET ${ setQueryKeys } = ${ setQueryValues }
+            WHERE id = $${ id }` )
+
+    sendJSON( res, 200, {
+      data: data.rows
+    } )
+  } catch ( error ) {
+    sendJSON( res, 500, {
+      data: [],
+      message: `❌ Database error while reading ${ type } ${ error }`,
+    } )
   }
 }
 
 // Delete
-export async function Delete<T extends keyof TypeMap>(type: T, id: string): Promise<void> {
-  const fileDB: string = path.join(DB_DIR, `${type}.json`);
-  let data: TypeMap[T][] = [];
+export async function Delete<T extends keyof TypeMap>( res: ServerResponse,
+                                                       pool: Pool,
+                                                       type: T,
+                                                       id: string ): Promise<void> {
   try {
-    data = JSON.parse(await fs.readFile(fileDB, "utf8"));
-    data = data.filter(i => (i as any).id !== id);
-    await fs.writeFile(fileDB, JSON.stringify(data, null, 2), "utf8");
-    return;
-  } catch (e) {
-    throw new Error(`Delete database error ${e}`);
+    const data: QueryResult = await pool.query( `
+        DELETE
+            FROM ${ type }
+            WHERE id = $${ id }` )
+
+    sendJSON( res, 201, {
+      data: data.rows
+    } )
+  } catch ( error ) {
+    sendJSON( res, 500, {
+      data: [],
+      message: `❌ Database error while deleting ${ type } ${ error }`,
+    } )
   }
 }
