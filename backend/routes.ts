@@ -115,7 +115,7 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
         }
         const user = await db.loginUser( res, username, password );
         if ( user ) {
-          const token: string = generateToken( user.username );
+          const token: string = generateToken( user.id );
           setAuthCookie( res, token, 60 * 60 * 24 * 2 );
           sendJSON( res, 200, {
             message: `✅ Welcome ${ user.username }`

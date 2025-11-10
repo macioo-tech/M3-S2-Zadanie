@@ -19,7 +19,7 @@ export type TypeMap = {
 };
 
 export interface TokenPayload {
-  username: string;
+  id: number;
   exp?: number;
 }
 

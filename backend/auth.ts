@@ -26,9 +26,9 @@ function parseCookies( req: IncomingMessage ): Record<string, string> {
   }, {} as Record<string, string> );
 }
 
-export function generateToken( username: string ): string {
+export function generateToken( id: number ): string {
   const SecretKey: string = SECRET_KEY as string;
-  const payload: TokenPayload = { username };
+  const payload: TokenPayload = { id };
   return jwt.sign( payload, SecretKey, { expiresIn: "48h" } );
 }
 
@@ -49,7 +49,7 @@ export async function authUser( req: IncomingMessage, res: ServerResponse ): Pro
   if ( !tokenPayload ) {
     return null;
   }
-  const user = await db.findByUsername( res, tokenPayload.username );
+  const user = await db.findById( res, 'users', tokenPayload.id );
   if ( !user ) {
     return null;
   }
