@@ -88,7 +88,7 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
             sendJSON( res, 400, { message: `Car Already Bought` } )
             return;
           }
-          const buyer: User | undefined = await db.findByUsername( res, buyerId )
+          const buyer: User | undefined = await db.findById( res, 'users', buyerId )
           if ( !buyer ) {
             sendJSON( res, 400, { message: `User Not Found` } )
             return;
@@ -113,7 +113,7 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
           sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
           return;
         }
-        const user = await db.findByUsername( res, username );
+        const user = await db.loginUser( res, username, password );
         if ( user ) {
           const token: string = generateToken( user.username );
           setAuthCookie( res, token, 60 * 60 * 24 * 2 );
