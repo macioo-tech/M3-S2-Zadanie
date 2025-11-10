@@ -3,7 +3,7 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { authUser } from './auth.js';
 import { JSONResponse, TypeMap } from './types.js';
 
-export function findHeader( reqPath: string ): string {
+function getMimeType( reqPath: string ): string {
   switch ( path.extname( reqPath === undefined ? '/index.html' : reqPath ).toLowerCase() ) {
     case '.html':
       return 'text/html';
@@ -12,7 +12,7 @@ export function findHeader( reqPath: string ): string {
     case '.js':
       return 'application/javascript';
     default:
-      return 'application/json';
+      return 'text/html';
   }
 }
 
@@ -28,23 +28,48 @@ export async function parseBody( req: IncomingMessage ): Promise<string> {
   } );
 }
 
-export async function checkAuth( req: IncomingMessage, res: ServerResponse ): Promise<boolean> {
-  const auth = await authUser( req )
+export async function checkAuth( req: IncomingMessage,
+                                 res: ServerResponse ): Promise<boolean> {
+  const auth = await authUser( req, res )
   if ( !auth ) {
     sendJSON( res, 400, {
-      error: '❌ User Not Authenticated',
+      message: '❌ User Not Authenticated',
     } )
     return false;
   }
   return true;
 }
 
-export function sendJSON<T extends keyof TypeMap>( res: ServerResponse, statusCode: number, data: JSONResponse<T> ) {
+export async function checkAdmin( req: IncomingMessage,
+                                  res: ServerResponse ): Promise<boolean> {
+  const auth = await authUser( req, res )
+  if ( !auth || auth.role !== 'admin' ) {
+    sendJSON( res, 400, {
+      message: '❌ Forbidden',
+    } )
+    return false;
+  }
+  return true;
+}
+
+export function sendJSON<T extends keyof TypeMap>( res: ServerResponse,
+                                                   statusCode: number,
+                                                   data: JSONResponse<T> ): void {
   res.writeHead( statusCode, { 'Content-Type': 'application/json' } );
   res.end( JSON.stringify( data ) );
 }
 
-export function sseEvent( event: string, data: object ): void {
+export function sendFileStream( res: ServerResponse,
+                                reqPath: string,
+                                statusCode: number,
+                                fileStream: NonSharedBuffer | string ): void {
+  res.writeHead( statusCode, { 'Content-Type': getMimeType( reqPath ) } );
+  res.end( fileStream );
+}
+
+export function sseEvent( event: string,
+                          data: object ): void {
+  let clients: ServerResponse[] = [];
   const message = `data: ${ JSON.stringify( { event, ...data } ) }\n\n`;
   clients.forEach( ( client, index ) => {
     try {

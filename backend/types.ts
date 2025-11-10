@@ -1,5 +1,5 @@
 export interface User {
-  id: string;
+  id: number;
   username: string;
   password: string; // Dla uproszczenia przechowujemy hasło w postaci jawnej (w praktyce należy stosować hashowanie)
   role: 'admin' | 'user';
@@ -7,7 +7,7 @@ export interface User {
 }
 
 export interface Car {
-  id: string;
+  id: number;
   model: string;
   price: number;
   ownerId: string;
@@ -19,11 +19,11 @@ export type TypeMap = {
 };
 
 export interface TokenPayload {
-  userId: string;
+  username: string;
   exp?: number;
 }
 
 export interface JSONResponse<T extends keyof TypeMap> {
-  data?: TypeMap[T][],
+  data?: TypeMap[T][] | TypeMap[T] | null;
   message?: string,
 }
