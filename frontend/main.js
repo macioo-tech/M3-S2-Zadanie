@@ -63,21 +63,21 @@ function renderNav() {
  * – tablica wszystkich użytkowników. W tym przypadku wybieramy obiekt admina.
  */
 async function checkAuth() {
-    try {
-        const res = await fetch('http://localhost:3000/me', {
-            method: 'POST',
-            credentials: 'include' // Important: send cookies with request
-        });
-        if (res.status === 200) {
-            const data = await res.json();
-            currentUser = data;
-        } else {
-            currentUser = null;
-        }
-    } catch (err) {
-        currentUser = null;
+  try {
+    const res = await fetch('http://localhost:3000/me', {
+      method: 'POST',
+      credentials: 'include' // Important: send cookies with request
+    });
+    if (res.status === 200) {
+      const {data: data} = await res.json();
+      currentUser = data;
+    } else {
+      currentUser = null;
     }
-    renderNav();
+  } catch (err) {
+    currentUser = null;
+  }
+  renderNav();
 }
 
 /**
@@ -100,13 +100,13 @@ function showView(viewId) {
  */
 async function loadProfile() {
   try {
-      if (!currentUser) return;
-      const userId = currentUser.id;
-      const res = await fetch(`http://localhost:3000/users/${userId}`, {
-          credentials: 'include'
-      });
+    if (!currentUser) return;
+    const userId = currentUser.id;
+    const res = await fetch(`http://localhost:3000/users/${userId}`, {
+      credentials: 'include'
+    });
     if (res.status === 200) {
-      const data = await res.json();
+      const {data: data} = await res.json();
       let profile;
       if (data) {
         profile = data;
@@ -126,11 +126,11 @@ async function loadProfile() {
  */
 async function loadCars() {
   try {
-      const res = await fetch('http://localhost:3000/cars', {
-          credentials: 'include'
-      });
+    const res = await fetch('http://localhost:3000/cars', {
+      credentials: 'include'
+    });
     if (res.status === 200) {
-      const cars = await res.json();
+      const {data: cars} = await res.json();
       let html = '';
       if (cars.length === 0) {
         html = 'Brak samochodów.';
@@ -155,32 +155,33 @@ async function loadCars() {
  * Ładuje listę uzytkownikow i wyświetla je w sekcji #users-list.
  */
 async function loadUsers() {
-    try {
-        const res = await fetch('http://localhost:3000/users', {
-            credentials: 'include'
-        });
-        if (res.status === 200) {
-            const users = await res.json();
-            let html = '';
-            if (users.length === 0) {
-                html = 'Brak użytkowników.';
-            } else {
-                users.forEach(user => {
-                    html += `<div class="user-item">
+  try {
+    const res = await fetch('http://localhost:3000/users', {
+      credentials: 'include'
+    });
+    if (res.status === 200) {
+      const {data: users} = await res.json();
+      let html = '';
+      if (users.length === 0) {
+        html = 'Brak użytkowników.';
+      } else {
+        users.forEach(user => {
+          html += `<div class="user-item">
                      <strong>ID:</strong> ${user.id} |
                      <strong>User:</strong> ${user.username} |
                      <strong>Password:</strong> ${user.password} |
                      <strong>Role:</strong> ${user.role}
                      <strong>Balance:</strong> ${user.balance}
                    </div>`;
-                });
-            }
-            document.getElementById('users-list').innerHTML = html;
-        }
-    } catch (err) {
-        showMessage('Błąd przy pobieraniu samochodów', 'error');
+        });
+      }
+      document.getElementById('users-list').innerHTML = html;
     }
+  } catch (err) {
+    showMessage('Błąd przy pobieraniu samochodów', 'error');
+  }
 }
+
 /**
  * Ustawia wszystkie nasłuchiwacze zdarzeń dla formularzy oraz routingu.
  */
@@ -198,9 +199,9 @@ function setupEventListeners() {
       const password = document.getElementById('loginPassword').value;
       const res = await fetch('http://localhost:3000/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         credentials: 'include',
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({username, password})
       });
       const data = await res.json();
       if (res.status === 200) {
@@ -222,9 +223,9 @@ function setupEventListeners() {
       const password = document.getElementById('regPassword').value;
       const res = await fetch('http://localhost:3000/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         credentials: 'include',
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({username, password})
       });
       const data = await res.json();
       if (res.status === 201) {
@@ -246,9 +247,9 @@ function setupEventListeners() {
       const userId = currentUser.id;
       const res = await fetch(`http://localhost:3000/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         credentials: 'include',
-        body: JSON.stringify({ username: newUsername, password: newPassword })
+        body: JSON.stringify({username: newUsername, password: newPassword})
       });
       const data = await res.json();
       if (res.status === 200) {
@@ -271,7 +272,7 @@ function setupEventListeners() {
       const price = parseFloat(document.getElementById('carPrice').value);
       const res = await fetch('http://localhost:3000/cars', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         credentials: 'include',
         body: JSON.stringify({model, price})
       });
@@ -292,10 +293,11 @@ function setupEventListeners() {
       e.preventDefault();
       const userId = currentUser.id;
       const carId = document.getElementById('buyCarId').value;
-      const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, { method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({buyerId: userId}),
+      const res = await fetch(`http://localhost:3000/cars/${carId}/buy`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify({buyerId: userId}),
       });
       const data = await res.json();
       if (res.status === 200) {
@@ -309,113 +311,116 @@ function setupEventListeners() {
   }
 }
 
-    // Formularz usuwania użytkownika
-    const deleteUserForm = document.getElementById('deleteUserForm');
-    if (deleteUserForm) {
-        deleteUserForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userId = document.getElementById('deleteUserId').value;
-            const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-            });
-            const data = await res.json();
-            if (res.status === 200) {
-                showMessage('Użytkownik usunięty', 'success');
-                loadUsers();
-            } else {
-                showMessage(data.error || 'Błąd usunięcia użytkownika', 'error');
-            }
-        });
+// Formularz usuwania użytkownika
+const deleteUserForm = document.getElementById('deleteUserForm');
+if (deleteUserForm) {
+  deleteUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userId = document.getElementById('deleteUserId').value;
+    const res = await fetch(`http://localhost:3000/users/${userId}`, {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (res.status === 200) {
+      showMessage('Użytkownik usunięty', 'success');
+      loadUsers();
+    } else {
+      showMessage(data.error || 'Błąd usunięcia użytkownika', 'error');
     }
+  });
+}
 
-    // Formularz edycji użytkownika
-    const editUserForm = document.getElementById('editUserForm');
-    if (editUserForm) {
-        editUserForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await fetch(`http://localhost:3000/users/${userId}`, { method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value,
-                    role: document.getElementById('editRole').value,
-                    balance: document.getElementById('balance').value,
-                }),
-            });
-            const data = await res.json();
-            if (res.status === 200) {
-                showMessage('Edycja użytkownika poprawna', 'success');
-                loadUsers();
-            } else {
-                showMessage(data.error || 'Błąd edycji użytkownika', 'error');
-            }
-        });
+// Formularz edycji użytkownika
+const editUserForm = document.getElementById('editUserForm');
+if (editUserForm) {
+  editUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const res = await fetch(`http://localhost:3000/users/${userId}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('editRole').value,
+        balance: document.getElementById('balance').value,
+      }),
+    });
+    const data = await res.json();
+    if (res.status === 200) {
+      showMessage('Edycja użytkownika poprawna', 'success');
+      loadUsers();
+    } else {
+      showMessage(data.error || 'Błąd edycji użytkownika', 'error');
     }
+  });
+}
 
-    // Formularz dodawania użytkownika
-    const addNewUserForm = document.getElementById('addNewUserForm');
-    if (addNewUserForm) {
-        addNewUserForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await fetch(`http://localhost:3000/register`, { method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value,
-                }),
-            });
-            const data = await res.json();
-            if (res.status === 200) {
-                showMessage('Użytkownik dodany', 'success');
-                loadUsers();
-            } else {
-                showMessage(data.error || 'Błąd dodania użytkownika', 'error');
-            }
-        });
+// Formularz dodawania użytkownika
+const addNewUserForm = document.getElementById('addNewUserForm');
+if (addNewUserForm) {
+  addNewUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const res = await fetch(`http://localhost:3000/register`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    const data = await res.json();
+    if (res.status === 200) {
+      showMessage('Użytkownik dodany', 'success');
+      loadUsers();
+    } else {
+      showMessage(data.error || 'Błąd dodania użytkownika', 'error');
     }
+  });
+}
 
 /**
  * Prosty router – na podstawie fragmentu adresu URL (hash) wyświetla odpowiedni widok.
  * Specjalnie obsługujemy #logout, aby "wylogować" użytkownika (symulacja).
  */
 function route() {
-    const hash = window.location.hash || '#home';
-    const viewId = hash.substring(1) + '-view';
+  const hash = window.location.hash || '#home';
+  const viewId = hash.substring(1) + '-view';
 
-    if (hash === '#logout') {
-        // Secure logout - call server endpoint
-        fetch('http://localhost:3000/logout', {
-            method: 'POST',
-            credentials: 'include' // Important: send cookie to be cleared
-        }).then(async (res) => {
-            if (res.status === 200) {
-                currentUser = null;
-                renderNav();
-                showMessage('Wylogowano pomyślnie', 'success');
-                window.location.hash = '#home';
-            } else {
-                showMessage('Błąd wylogowania', 'error');
-            }
-        }).catch((err) => {
-            console.error('Logout error:', err);
-            showMessage('Błąd wylogowania', 'error');
-        });
-        return;
-    }
+  if (hash === '#logout') {
+    // Secure logout - call server endpoint
+    fetch('http://localhost:3000/logout', {
+      method: 'POST',
+      credentials: 'include' // Important: send cookie to be cleared
+    }).then(async (res) => {
+      if (res.status === 200) {
+        currentUser = null;
+        renderNav();
+        showMessage('Wylogowano pomyślnie', 'success');
+        window.location.hash = '#home';
+      } else {
+        showMessage('Błąd wylogowania', 'error');
+      }
+    }).catch((err) => {
+      console.error('Logout error:', err);
+      showMessage('Błąd wylogowania', 'error');
+    });
+    return;
+  }
 
-    showView(viewId);
-    if (viewId === 'profile-view') {
-        loadProfile();
-    }
-    if (viewId === 'cars-view') {
-        loadCars();
-    }
-    if (viewId === 'users-view') {
-        loadUsers();
-    }
+  showView(viewId);
+  if (viewId === 'profile-view') {
+    loadProfile();
+  }
+  if (viewId === 'cars-view') {
+    loadCars();
+  }
+  if (viewId === 'users-view') {
+    loadUsers();
+  }
 }
 
 /**

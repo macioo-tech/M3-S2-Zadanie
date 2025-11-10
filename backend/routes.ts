@@ -140,7 +140,7 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
           sendJSON( res, 400, { message: '❌ User not authenticated' } );
           return;
         }
-        sendJSON( res, 200, { message: `✅ Welcome back ${ user.username }` } )
+        sendJSON( res, 200, { data: user, message: `✅ Welcome back ${ user.username }` } )
         return;
       }
 
@@ -161,7 +161,6 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
 
       // /hack/{id}/{cash}
       if ( reqPath === 'hack' && reqId && optional ) {
-        if ( !await checkAuth( req, res ) ) return
         const cash = parseInt( optional );
         if ( isNaN( cash ) ) {
           sendJSON( res, 400, { message: `Cash ${ optional } is not a number` } )
