@@ -125,6 +125,23 @@ export async function updateCar( res: ServerResponse,
   }
 }
 
+export async function updateUser( res: ServerResponse,
+                                  id: number,
+                                  username: string,
+                                  password: string ): Promise<void> {
+  try {
+    const query = `UPDATE users
+                   SET username = $1,
+                       password = $2
+                       WHERE id = $3
+                       RETURNING id, username, password, role, balance`;
+    const values = [ username, password, id ];
+    await pool.query( query, values );
+  } catch ( error ) {
+    sendJSON( res, 500, { message: `❌ Database error while updating at users` } )
+  }
+}
+
 export async function connectDB(): Promise<void> {
   try {
     await pool.connect();

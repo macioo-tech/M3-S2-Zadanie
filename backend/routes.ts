@@ -46,7 +46,7 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
     if ( method === 'GET' ) {
       // endpoints /users && /cars
       if ( !await checkAuth( req, res ) ) return
-      if ( reqPath === 'users' || reqPath === 'cars' )
+      if ( reqPath === 'users' || reqPath === 'cars' ) {
         if ( reqId === undefined ) {
           const data = await db.findAll( res, reqPath );
           sendJSON( res, 200, { data: data } )
@@ -56,6 +56,24 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
           sendJSON( res, 200, { data: data } )
           return;
         }
+      }
+    }
+
+    if ( method === 'PUT' ) {
+      // endpoint /users/{id}
+      if ( !await checkAuth( req, res ) ) return
+      if ( !await checkAdmin( req, res ) ) return
+      if ( reqPath === 'users' && reqId ) {
+        const body = await parseBody( req );
+        const { username, password } = JSON.parse( body.toString() );
+        if ( !username || !password ) {
+          sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
+          return;
+        }
+        await db.updateUser( res, parseInt( reqId ), username, password );
+        sendJSON( res, 200, { message: `✅ Changes username and password` } )
+        return;
+      }
     }
 
     // methods POST
