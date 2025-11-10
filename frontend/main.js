@@ -140,7 +140,7 @@ async function loadCars() {
                      <strong>ID:</strong> ${car.id} |
                      <strong>Model:</strong> ${car.model} |
                      <strong>Cena:</strong> ${car.price} |
-                     <strong>Właściciel:</strong> ${car.ownerId}
+                     <strong>Właściciel:</strong> ${car.owner_id}
                    </div>`;
         });
       }
