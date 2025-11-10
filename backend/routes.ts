@@ -62,7 +62,6 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
     if ( method === 'PUT' ) {
       // endpoint /users/{id}
       if ( !await checkAuth( req, res ) ) return
-      if ( !await checkAdmin( req, res ) ) return
       if ( reqPath === 'users' && reqId ) {
         const body = await parseBody( req );
         const { username, password } = JSON.parse( body.toString() );
