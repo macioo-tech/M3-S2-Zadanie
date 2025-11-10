@@ -51,6 +51,10 @@ export async function router( req: IncomingMessage, res: ServerResponse ) {
           const data = await db.findAll( res, reqPath );
           sendJSON( res, 200, { data: data } )
           return;
+        } else {
+          const data = await db.findById( res, reqPath, parseInt( reqId ) );
+          sendJSON( res, 200, { data: data } )
+          return;
         }
     }
 
