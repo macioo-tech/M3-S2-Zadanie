@@ -5,12 +5,19 @@ import path from "node:path";
 import * as db from "./db.js";
 import { User, Car } from "./types.js";
 import { setAuthCookie, generateToken, authUser } from "./auth.js";
-import { parseBody, sendJSON, sendFileStream, checkAuth, checkAdmin, sseEvent } from './helpers.js';
+import {
+  parseBody,
+  sendJSON,
+  sendFileStream,
+  checkAuth,
+  checkAdmin,
+  sseEvent,
+  clients
+} from './helpers.js';
 
 const __filename = fileURLToPath( import.meta.url );
 const __dirname = path.dirname( __filename );
 const FRONTEND_DIR = path.join( __dirname, '..', 'frontend' );
-const clients: ServerResponse[] = [];
 
 // Main server API router handler
 export async function router( req: IncomingMessage, res: ServerResponse ) {

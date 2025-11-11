@@ -24,7 +24,7 @@ function showNotification(text) {
   notifDiv.innerText = text;
   setTimeout(() => {
     notifDiv.innerText = '';
-  }, 5000);
+  }, 10000);
 }
 
 /**
@@ -405,7 +405,6 @@ function route() {
         showMessage('Błąd wylogowania', 'error');
       }
     }).catch((err) => {
-      console.error('Logout error:', err);
       showMessage('Błąd wylogowania', 'error');
     });
     return;

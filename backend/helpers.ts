@@ -3,6 +3,8 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { authUser } from './auth.js';
 import { JSONResponse, TypeMap } from './types.js';
 
+export const clients: ServerResponse[] = [];
+
 function getMimeType( reqPath: string ): string {
   switch ( path.extname( reqPath === undefined ? '/index.html' : reqPath ).toLowerCase() ) {
     case '.html':
@@ -69,7 +71,6 @@ export function sendFileStream( res: ServerResponse,
 
 export function sseEvent( event: string,
                           data: object ): void {
-  let clients: ServerResponse[] = [];
   const message = `data: ${ JSON.stringify( { event, ...data } ) }\n\n`;
   clients.forEach( ( client, index ) => {
     try {
