@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
 import { TypeMap, User } from './types.js';
 import { ServerResponse } from 'node:http';
 import { sendJSON } from './helpers.js';
@@ -144,10 +144,43 @@ export async function updateUser( res: ServerResponse,
 
 export async function connectDB(): Promise<void> {
   try {
-    await pool.connect();
+    const client = await pool.connect();
+    await initTables( client );
     console.log( '✅ Successfully connected to postgresql database' );
   } catch ( error ) {
     console.error( '❌ Error connecting to the database:', error );
     console.log( '💡 Make sure postgresql is running (docker-compose up)' );
+  }
+}
+
+// ONLY for assessment purpose
+async function initTables( client: PoolClient ): Promise<void> {
+  try {
+    await client.query( `BEGIN` );
+    await client.query( `CREATE TABLE IF NOT EXISTS users
+                         (
+                             id       SERIAL PRIMARY KEY,
+                             username VARCHAR(255) NOT NULL,
+                             password VARCHAR(255) NOT NULL,
+                             role     VARCHAR(255) NOT NULL DEFAULT 'user',
+                             balance  INT          NOT NULL DEFAULT 0
+                         )` );
+    await client.query( `CREATE TABLE IF NOT EXISTS cars
+                         (
+                             id       SERIAL PRIMARY KEY,
+                             model    VARCHAR(255) NOT NULL,
+                             price    INT default 0,
+                             owner_id int references users (id)
+                         )` );
+    await client.query( `INSERT INTO users (username, password)
+                             VALUES ('admin', 'admin123')
+                         ON CONFLICT (username) DO NOTHING
+                             RETURNING id, username, password, role, balance` );
+    await client.query( `COMMIT` );
+  } catch ( error ) {
+    await client.query( 'ROLLBACK' );
+    throw error;
+  } finally {
+    client.release();
   }
 }
