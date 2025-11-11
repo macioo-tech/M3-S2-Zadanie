@@ -6,9 +6,11 @@ Projekt umożliwia rejestrację, logowanie, zarządzanie użytkownikami i samoch
 
 ## Uruchomienie
 
-1. Skompiluj projekt przy użyciu `tsc`.
-2. Uruchom serwer (np. `node dist/index.js`).
-3. Frontend znajduje się w katalogu `frontend/` – dostęp do plików statycznych przez endpoint `/static/`.
+1. Zainstaluj dependencje `npm install`
+2. Skompiluj projekt przy użyciu `npm run build`.
+3. Start postgresql przy użyciu `docker-compose up`.
+4. Uruchom serwer przy użyciu np. `npm run dev:nodemon`, `npm run dev:nodeenv`
+5. Frontend znajduje się w katalogu `frontend/` – dostęp do plików statycznych przez endpoint `/static/`.
 
 ## Uwaga
 
