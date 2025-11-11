@@ -14,7 +14,7 @@ Projekt umożliwia rejestrację, logowanie, zarządzanie użytkownikami i samoch
 
 ## Uwaga
 
-Konto administratora jest predefiniowane w `db/users.json`:
+Konto administratora jest predefiniowane ~~w `db/users.json`:~~
 
 - **Username:** admin
 - **Password:** admin123
