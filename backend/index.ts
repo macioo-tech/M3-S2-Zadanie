@@ -1,13 +1,21 @@
-import { createServer } from 'http';
+import * as http from 'http'
+import { router } from "./routes.js";
+import { connectDB } from './db.js';
 
-const PORT = 3000;
-const server = createServer(async (req, res) => {
-  res.end(JSON.stringify({ status: 'ok'}))
+const PORT = process.env.PORT;
 
-  // 1. Obsługa endpointów
-  // 2. Proste serwowanie plików statycznych z katalogu frontend (np. pod ścieżką /static/)
-});
+const logger = ( req: http.IncomingMessage, res: http.ServerResponse, next: Function ): void => {
+  console.log( `Server request ${ req.method } ${ req.url }` )
+  next();
+}
 
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+const server = http.createServer( async ( req, res ) => {
+  logger( req, res, async () => {
+    await router( req, res )
+  } )
+} );
+
+server.listen( PORT, async (): Promise<void> => {
+  console.log( `🚀 Server running on http://localhost:${ PORT }` );
+  await connectDB();
+} );

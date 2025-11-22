@@ -1,22 +1,29 @@
 # Projekt Car Shop
 
 ## Opis
+
 Projekt umożliwia rejestrację, logowanie, zarządzanie użytkownikami i samochodami oraz symulację zakupu samochodów.
 
 ## Uruchomienie
-1. Skompiluj projekt przy użyciu `tsc`.
-2. Uruchom serwer (np. `node dist/index.js`).
-3. Frontend znajduje się w katalogu `frontend/` – dostęp do plików statycznych przez endpoint `/static/`.
+
+1. Zainstaluj dependencje `npm install`
+2. Skompiluj projekt przy użyciu `npm run build`.
+3. Start postgresql przy użyciu `docker-compose up`.
+4. Uruchom serwer przy użyciu np. `npm run dev:nodemon`, `npm run dev:nodeenv`
+5. Frontend znajduje się w katalogu `frontend/` – dostęp do plików statycznych przez endpoint `/static/`.
 
 ## Uwaga
-Konto administratora jest predefiniowane w `db/users.json`:
+
+Konto administratora jest predefiniowane ~~w `db/users.json`:~~
+
 - **Username:** admin
 - **Password:** admin123
 
 ## Cele zadania
+
 - CRUD dla users (create, read, update, delete)
 - CRUD dla cars (create, read, update, delete)
-- zapis do bazy danych w formie plików json
+- ~~zapis do bazy danych w formie plików json~~
 - obsługa błędów
 - logowanie
 - rejestracja
@@ -27,3 +34,5 @@ Konto administratora jest predefiniowane w `db/users.json`:
 - SSE - (server side events), w momencie zakupu samochodu wysyłamy info do wszystkich podpiętych userów
 - hack/fund, backdoor do zasilania konta usera
 - pełne otypowanie
+- zapis do bazy danych postgresql
+- bazy danych uruchamiamy na dockerze
