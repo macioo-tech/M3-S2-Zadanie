@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/macioo-tech/M3-S2-Zadanie#readme",
   "devDependencies": {
+    "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.9.1",
     "@types/pg": "^8.15.6",
