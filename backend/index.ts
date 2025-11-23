@@ -5,8 +5,10 @@ import carsRouter from './routes/cars.js';
 import sseRouter from './routes/sse.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
-import { connectDB } from './db.js';
+import logger from './middleware/logger.js';
+import { connectDB } from './db/db.js';
 import { fileURLToPath } from 'node:url';
+
 
 const app = express();
 const PORT = process.env.PORT;
@@ -18,6 +20,7 @@ app.use( express.static( path.join( __dirname, '..', 'frontend' ) ) )
 app.use( express.json() )
 app.use( express.urlencoded( { extended: false } ) )
 
+app.use( logger )
 app.use( '/users', usersRouter );
 app.use( '/cars', carsRouter )
 app.use( '/sse', sseRouter )

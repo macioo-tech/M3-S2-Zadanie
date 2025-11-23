@@ -1,6 +1,6 @@
-import { IncomingMessage } from "node:http";
+import { Request, Response } from 'express';
 
-function logger( req: IncomingMessage, next: Function ): void {
+function logger( req: Request, res: Response, next: Function ): void {
   console.log( `Server request ${ req.method } ${ req.url }` )
   next();
 }

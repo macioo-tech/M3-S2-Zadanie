@@ -8,9 +8,8 @@ import {
   logoutUser,
   me,
   registerUser,
-  updateUser
-} from '../controllers/usersController.js';
-
+  putUser
+} from '../controllers/users.controller.js';
 
 const router = express.Router();
 
@@ -21,7 +20,7 @@ router.post( '/logout', logoutUser )
 router.post( '/me', me )
 router.post( '/register', registerUser )
 router.post( '/hack/:id/:amount', hackUser )
-router.put( '/:id', updateUser )
+router.put( '/:id', putUser )
 router.delete( '/:id', deleteUser )
 
 export default router;

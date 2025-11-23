@@ -1,8 +1,15 @@
-import { TypeMap, User } from '../types.js';
+import { User } from '../types.js';
 import { Request, Response } from 'express';
-import { QueryResult } from 'pg';
 import { checkAdmin, checkAuth, parseBody, sendJSON } from '../helpers.js';
-import { pool } from '../db.js';
+import {
+  deleteById,
+  findAll,
+  findById,
+  findUserPass,
+  insertUser,
+  updateUser,
+  updateUserBalance
+} from '../db/db.js';
 import { authUser, generateToken, setAuthCookie } from '../auth.js';
 
 export async function getUsers( req: Request,
@@ -10,10 +17,9 @@ export async function getUsers( req: Request,
                                 next: Function ): Promise<void> {
   try {
     if ( !await checkAuth( req, res ) ) return
-    const query = `SELECT *
-                       FROM users`;
-    const result: QueryResult<User> = await pool.query( query );
-    sendJSON( res, 200, { data: result.rows } )
+
+    const users: User[] = await findAll( 'users' )
+    sendJSON( res, 200, { data: users } )
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error while finding at getUsers` } )
     next( error );
@@ -26,18 +32,17 @@ export async function getUserById( req: Request,
   try {
     if ( !await checkAuth( req, res ) ) return
     const id = parseInt( req.params.id as string, 10 )
-    const query = `SELECT *
-                       FROM users
-                       WHERE id = $1`;
-    const result: QueryResult<User> = await pool.query( query, [ id ] );
-    sendJSON( res, 200, { data: result.rows[ 0 ] } )
+    const user: User = await findById( 'users', id )
+    sendJSON( res, 200, { data: user } )
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error while finding id at getUsersById` } )
+    next( error );
   }
 }
 
 export async function loginUser( req: Request,
-                                 res: Response ): Promise<void> {
+                                 res: Response,
+                                 next: Function ): Promise<void> {
   try {
     const body = await parseBody( req );
     const { username, password } = JSON.parse( body.toString() );
@@ -45,12 +50,7 @@ export async function loginUser( req: Request,
       sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
       return;
     }
-    const query = `SELECT *
-                       FROM users
-                       WHERE username = $1
-                         AND password = $2`;
-    const result: QueryResult<User> = await pool.query( query, [ username, password ] );
-    const user: User = result.rows[ 0 ];
+    const user: User = await findUserPass( username, password );
     if ( user ) {
       const token: string = generateToken( user.id );
       setAuthCookie( res, token, 60 * 60 * 24 * 2 );
@@ -62,19 +62,24 @@ export async function loginUser( req: Request,
     }
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error at loginUser` } )
+    next( error );
   }
 }
 
-export function logoutUser( res: Response ): void {
+export function logoutUser( req: Request,
+                            res: Response,
+                            next: Function ): void {
   res.setHeader(
     'Set-Cookie',
     'token=; HttpOnly; Secure; Path=/; Max-Age=0'
   );
   sendJSON( res, 200, { message: `✅ See you later` } )
+  next();
 }
 
 export async function me( req: Request,
-                          res: Response ): Promise<void> {
+                          res: Response,
+                          next: Function ): Promise<void> {
   try {
     const user = await authUser( req, res );
     if ( !user ) {
@@ -84,11 +89,13 @@ export async function me( req: Request,
     sendJSON( res, 200, { data: user, message: `✅ Welcome back ${ user.username }` } )
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error at me` } )
+    next( error );
   }
 }
 
 export async function registerUser( req: Request,
-                                    res: Response ): Promise<void> {
+                                    res: Response,
+                                    next: Function ): Promise<void> {
   try {
     const body = await parseBody( req );
     const { username, password } = JSON.parse( body.toString() );
@@ -96,23 +103,20 @@ export async function registerUser( req: Request,
       sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
       return;
     }
-    const query = `INSERT INTO users (username, password)
-                       VALUES ($1, $2)
-                       RETURNING id, username, password, role, balance`;
-    const values: string[] = [ username, password ];
-    const result: QueryResult<User> = await pool.query( query, values );
-    const user: User = result.rows[ 0 ];
+    const user: User = await insertUser( username, password );
     sendJSON( res, 201, {
       message: `✅ Welcome on board ${ user.username }`
     } )
     return;
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error while creating at registerUser` } )
+    next( error );
   }
 }
 
 export async function hackUser( req: Request,
-                                res: Response ): Promise<void> {
+                                res: Response,
+                                next: Function ): Promise<void> {
   try {
     const id = parseInt( req.params.id as string, 10 )
     const cash = parseInt( req.params.cash as string, 10 )
@@ -120,16 +124,13 @@ export async function hackUser( req: Request,
       sendJSON( res, 400, { message: `Cash ${ cash } is not a number` } )
       return;
     }
-    const query = `UPDATE users
-                   SET balance = balance - $1
-                       WHERE id = $2`;
-    const values: string[] = [ cash.toString(), id.toString() ];
-    await pool.query( query, values );
+    await updateUserBalance( id, cash )
     sendJSON( res, 200, {
-      message: `user ${ id } hacked for ${ cash }`
+      message: `✅ User ${ id } hacked additional cash of ${ cash }`
     } )
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error while updating at hackUser` } )
+    next( error );
   }
 }
 
@@ -139,20 +140,17 @@ export async function deleteUser( req: Request,
     if ( !await checkAuth( req, res ) ) return
     if ( !await checkAdmin( req, res ) ) return
     const id = parseInt( req.params.id as string, 10 )
-    const query = `DELETE
-                       FROM users
-                       WHERE id = $1`;
-    await pool.query( query, [ id ] );
+    await deleteById( 'users', id );
     sendJSON( res, 200, {
-      message: `User ${ id } deleted successfully`
+      message: `✅ User ${ id } deleted successfully`
     } )
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error while deleting at deleteUser` } )
   }
 }
 
-export async function updateUser( req: Request,
-                                  res: Response ): Promise<void> {
+export async function putUser( req: Request,
+                               res: Response ): Promise<void> {
   try {
     if ( !await checkAuth( req, res ) ) return
     const body = await parseBody( req );
@@ -162,13 +160,7 @@ export async function updateUser( req: Request,
       return;
     }
     const id = parseInt( req.params.id as string, 10 )
-    const query = `UPDATE users
-                   SET username = $1,
-                       password = $2
-                       WHERE id = $3
-                       RETURNING id, username, password, role, balance`;
-    const values: string[] = [ username, password, id.toString() ];
-    await pool.query( query, values );
+    await updateUser( id, username, password );
     sendJSON( res, 200, { message: `✅ Changes username and password` } )
   } catch ( error ) {
     sendJSON( res, 500, { message: `❌ Database error while updating at users` } )

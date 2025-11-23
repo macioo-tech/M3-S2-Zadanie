@@ -1,7 +1,7 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import jwt from "jsonwebtoken"
 import { TokenPayload, User } from "./types.js";
-import * as db from "./db.js";
+import * as db from "./db/db.js";
 
 const SECRET_KEY = process.env.SECRET_KEY;
 

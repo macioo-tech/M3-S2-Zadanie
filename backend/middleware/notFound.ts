@@ -1,9 +1,9 @@
-import { IncomingMessage, ServerResponse } from "node:http";
+import { Request, Response } from 'express';
+import { sendJSON } from '../helpers.js';
 
-function notFound( req: IncomingMessage, res: ServerResponse, next: Function ): void {
-  const error: Error = new Error( `Not Found - ${ req.url }` )
-  error. = '404';
-  next( error )
+function notFound( req: Request, res: Response, next: Function ): void {
+  sendJSON( res, 404, { message: '❌ Route Not Found' } );
+  throw new Error( '404 Not Found' );
 }
 
 export default notFound
