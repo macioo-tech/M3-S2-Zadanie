@@ -49,7 +49,7 @@ export async function authUser( req: IncomingMessage, res: ServerResponse ): Pro
   if ( !tokenPayload ) {
     return null;
   }
-  const user = await db.findById( res, 'users', tokenPayload.id );
+  const user = await db.findById( 'users', tokenPayload.id );
   if ( !user ) {
     return null;
   }
