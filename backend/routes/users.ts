@@ -1,15 +1,27 @@
 import express from 'express';
-import { getUserById, getUsers, loginUser } from '../controllers/usersController.js';
+import {
+  deleteUser,
+  getUserById,
+  getUsers,
+  hackUser,
+  loginUser,
+  logoutUser,
+  me,
+  registerUser,
+  updateUser
+} from '../controllers/usersController.js';
+
 
 const router = express.Router();
 
 router.get( '/', getUsers );
 router.get( '/:id', getUserById )
 router.post( '/login', loginUser )
-router.post( '/logout', )
-router.post( '/me', )
-router.post( '/register', )
-router.put( '/:id', )
-router.delete( '/:id', )
+router.post( '/logout', logoutUser )
+router.post( '/me', me )
+router.post( '/register', registerUser )
+router.post( '/hack/:id/:amount', hackUser )
+router.put( '/:id', updateUser )
+router.delete( '/:id', deleteUser )
 
 export default router;
