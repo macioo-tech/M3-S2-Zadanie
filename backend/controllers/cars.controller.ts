@@ -36,8 +36,7 @@ export async function registerCar( req: Request,
                                    next: Function ): Promise<void> {
   try {
     if ( !await checkAuth( req, res ) ) return
-    const body = await parseBody( req );
-    const { model, price } = JSON.parse( body.toString() );
+    const { model, price } = req.body;
     await insertCar( model, price );
     sendJSON( res, 201, { message: `✅ Car ${ model } added` } )
   } catch ( error ) {
@@ -50,8 +49,7 @@ export async function buyCar( req: Request,
                               res: Response,
                               next: Function ): Promise<void> {
   try {
-    const body = await parseBody( req );
-    const { buyerId } = JSON.parse( body.toString() );
+    const { buyerId } = req.body;
     if ( !buyerId ) {
       sendJSON( res, 400, { message: `❌ Missing ownerId in body` } )
       return;

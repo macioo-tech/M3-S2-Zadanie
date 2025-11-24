@@ -44,8 +44,7 @@ export async function loginUser( req: Request,
                                  res: Response,
                                  next: Function ): Promise<void> {
   try {
-    const body = await parseBody( req );
-    const { username, password } = JSON.parse( body.toString() );
+    const { username, password } = req.body;
     if ( !username || !password ) {
       sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
       return;
@@ -97,8 +96,7 @@ export async function registerUser( req: Request,
                                     res: Response,
                                     next: Function ): Promise<void> {
   try {
-    const body = await parseBody( req );
-    const { username, password } = JSON.parse( body.toString() );
+    const { username, password } = req.body;
     if ( !username || !password ) {
       sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
       return;
@@ -153,8 +151,7 @@ export async function putUser( req: Request,
                                res: Response ): Promise<void> {
   try {
     if ( !await checkAuth( req, res ) ) return
-    const body = await parseBody( req );
-    const { username, password } = JSON.parse( body.toString() );
+    const { username, password } = req.body;
     if ( !username || !password ) {
       sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
       return;
