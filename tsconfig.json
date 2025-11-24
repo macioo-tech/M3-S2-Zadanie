@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
       "target": "ES2019",
-      "module": "commonjs",
+      "module": "NodeNext",
       "rootDir": "./backend",
       "outDir": "./dist",
       "strict": true,

@@ -1,0 +1,14 @@
+{
+  "watch": [
+    "backend",
+    "db"
+  ],
+  "ext": "ts,js,json",
+  "ignore": [
+    "node_modules"
+  ],
+  "exec": "node -r dotenv/config ./dist/index.js",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
