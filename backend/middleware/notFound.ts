@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import { sendJSON } from '../helpers.js';
+import { apiError } from '../types.js';
 
 function notFound( req: Request, res: Response, next: Function ): void {
-  sendJSON( res, 404, { message: '❌ Route Not Found' } );
-  throw new Error( '404 Not Found' );
+  const error: apiError = new Error( `Not Found -${ req.originalUrl } ` );
+  error.status = 404;
+  next( error );
 }
 
 export default notFound

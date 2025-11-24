@@ -1,9 +1,9 @@
 import path from 'node:path';
-import { IncomingMessage, ServerResponse } from 'node:http';
+import { Request, Response } from 'express';
 import { authUser } from './auth.js';
-import { JSONResponse, TypeMap } from './types.js';
+import { apiError, JSONResponse, TypeMap } from './types.js';
 
-export const clients: ServerResponse[] = [];
+export const clients: Response[] = [];
 
 function getMimeType( reqPath: string ): string {
   switch ( path.extname( reqPath === undefined ? '/index.html' : reqPath ).toLowerCase() ) {
@@ -18,7 +18,7 @@ function getMimeType( reqPath: string ): string {
   }
 }
 
-export async function parseBody( req: IncomingMessage ): Promise<string> {
+export async function parseBody( req: Request ): Promise<string> {
   return new Promise( ( resolve ) => {
     let data = '';
     req.on( 'data', ( chunk ) => {
@@ -30,38 +30,36 @@ export async function parseBody( req: IncomingMessage ): Promise<string> {
   } );
 }
 
-export async function checkAuth( req: IncomingMessage,
-                                 res: ServerResponse ): Promise<boolean> {
+export async function checkAuth( req: Request,
+                                 res: Response ): Promise<boolean> {
   const auth = await authUser( req, res )
   if ( !auth ) {
-    sendJSON( res, 400, {
-      message: '❌ User Not Authenticated',
-    } )
+    const error: apiError = new Error( 'Authentication Failed' );
+    error.status = 400;
     return false;
   }
   return true;
 }
 
-export async function checkAdmin( req: IncomingMessage,
-                                  res: ServerResponse ): Promise<boolean> {
+export async function checkAdmin( req: Request,
+                                  res: Response ): Promise<boolean> {
   const auth = await authUser( req, res )
   if ( !auth || auth.role !== 'admin' ) {
-    sendJSON( res, 400, {
-      message: '❌ Forbidden',
-    } )
+    const error: apiError = new Error( 'Forbidden' );
+    error.status = 400;
     return false;
   }
   return true;
 }
 
-export function sendJSON<T extends keyof TypeMap>( res: ServerResponse,
+export function sendJSON<T extends keyof TypeMap>( res: Response,
                                                    statusCode: number,
                                                    data: JSONResponse<T> ): void {
   res.writeHead( statusCode, { 'Content-Type': 'application/json' } );
   res.end( JSON.stringify( data ) );
 }
 
-export function sendFileStream( res: ServerResponse,
+export function sendFileStream( res: Response,
                                 reqPath: string,
                                 statusCode: number,
                                 fileStream: NonSharedBuffer | string ): void {

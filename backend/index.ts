@@ -9,7 +9,7 @@ import registerRouter from './routes/register.js';
 import meRouter from './routes/me.js';
 import hackRouter from './routes/hack.js';
 import notFound from './middleware/notFound.js';
-import errorHandler from './middleware/errorHandler.js';
+import error from './middleware/error.js';
 import logger from './middleware/logger.js';
 import { connectDB } from './db/db.js';
 import { fileURLToPath } from 'node:url';
@@ -34,7 +34,7 @@ app.use( '/users', usersRouter );
 app.use( '/cars', carsRouter )
 app.use( '/sse', sseRouter )
 app.use( notFound )
-app.use( errorHandler )
+app.use( error )
 
 app.listen( PORT, async (): Promise<void> => {
   console.log( `🚀 Server running on http://localhost:${ PORT }` );

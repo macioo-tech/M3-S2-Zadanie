@@ -27,3 +27,7 @@ export interface JSONResponse<T extends keyof TypeMap> {
   data?: TypeMap[T][] | TypeMap[T] | null;
   message?: string,
 }
+
+export interface apiError extends Error {
+  status?: number;
+}

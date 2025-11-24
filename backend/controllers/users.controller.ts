@@ -1,6 +1,6 @@
-import { User } from '../types.js';
+import { apiError, User } from '../types.js';
 import { Request, Response } from 'express';
-import { checkAdmin, checkAuth, parseBody, sendJSON } from '../helpers.js';
+import { checkAdmin, checkAuth } from '../helpers.js';
 import {
   deleteById,
   findAll,
@@ -19,9 +19,8 @@ export async function getUsers( req: Request,
     if ( !await checkAuth( req, res ) ) return
 
     const users: User[] = await findAll( 'users' )
-    sendJSON( res, 200, { data: users } )
+    res.status( 200 ).json( { data: users } );
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error while finding at getUsers` } )
     next( error );
   }
 }
@@ -33,9 +32,8 @@ export async function getUserById( req: Request,
     if ( !await checkAuth( req, res ) ) return
     const id = parseInt( req.params.id as string, 10 )
     const user: User = await findById( 'users', id )
-    sendJSON( res, 200, { data: user } )
+    res.status( 200 ).json( { data: user } );
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error while finding id at getUsersById` } )
     next( error );
   }
 }
@@ -46,21 +44,21 @@ export async function loginUser( req: Request,
   try {
     const { username, password } = req.body;
     if ( !username || !password ) {
-      sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
-      return;
+      const error: apiError = new Error( 'Invalid username or password' );
+      error.status = 400;
+      return next( error );
     }
     const user: User = await findUserPass( username, password );
     if ( user ) {
       const token: string = generateToken( user.id );
       setAuthCookie( res, token, 60 * 60 * 24 * 2 );
-      sendJSON( res, 200, {
-        message: `✅ Welcome ${ user.username }`
-      } )
+      res.status( 200 ).json( { message: `Welcome user ${ user.username } ` } );
     } else {
-      sendJSON( res, 401, { message: '❌ Authentication Failed' } );
+      const error: apiError = new Error( 'Authentication Failed' );
+      error.status = 401;
+      return next( error );
     }
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error at loginUser` } )
     next( error );
   }
 }
@@ -72,7 +70,7 @@ export function logoutUser( req: Request,
     'Set-Cookie',
     'token=; HttpOnly; Secure; Path=/; Max-Age=0'
   );
-  sendJSON( res, 200, { message: `✅ See you later` } )
+  res.status( 200 ).json( { message: 'Logged out successfully' } );
   next();
 }
 
@@ -82,12 +80,12 @@ export async function me( req: Request,
   try {
     const user = await authUser( req, res );
     if ( !user ) {
-      sendJSON( res, 400, { message: '❌ User not authenticated' } );
-      return;
+      const error: apiError = new Error( 'Authentication Failed' );
+      error.status = 401;
+      return next( error );
     }
-    sendJSON( res, 200, { data: user, message: `✅ Welcome back ${ user.username }` } )
+    res.status( 200 ).json( { data: user, message: `Welcome back ${ user.username }` } );
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error at me` } )
     next( error );
   }
 }
@@ -98,16 +96,14 @@ export async function registerUser( req: Request,
   try {
     const { username, password } = req.body;
     if ( !username || !password ) {
-      sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
-      return;
+      const error: apiError = new Error( 'Invalid username or password' );
+      error.status = 400;
+      return next( error );
     }
     const user: User = await insertUser( username, password );
-    sendJSON( res, 201, {
-      message: `✅ Welcome on board ${ user.username }`
-    } )
+    res.status( 201 ).json( { message: `Welcome on board ${ user.username }` } );
     return;
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error while creating at registerUser` } )
     next( error );
   }
 }
@@ -119,48 +115,47 @@ export async function hackUser( req: Request,
     const id = parseInt( req.params.id as string, 10 )
     const cash = parseInt( req.params.cash as string, 10 )
     if ( isNaN( cash ) ) {
-      sendJSON( res, 400, { message: `Cash ${ cash } is not a number` } )
-      return;
+      const error: apiError = new Error( `Cash ${ cash } is not a number` );
+      error.status = 400;
+      return next( error );
     }
     await updateUserBalance( id, cash )
-    sendJSON( res, 200, {
-      message: `✅ User ${ id } hacked additional cash of ${ cash }`
-    } )
+    res.status( 200 ).json( { message: `User ${ id } hacked additional cash of ${ cash }` } )
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error while updating at hackUser` } )
     next( error );
   }
 }
 
 export async function deleteUser( req: Request,
-                                  res: Response ): Promise<void> {
+                                  res: Response,
+                                  next: Function ): Promise<void> {
   try {
     if ( !await checkAuth( req, res ) ) return
     if ( !await checkAdmin( req, res ) ) return
     const id = parseInt( req.params.id as string, 10 )
     await deleteById( 'users', id );
-    sendJSON( res, 200, {
-      message: `✅ User ${ id } deleted successfully`
-    } )
+    res.status( 200 ).json( { message: `User ${ id } deleted successfully` } )
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error while deleting at deleteUser` } )
+    next( error )
   }
 }
 
 export async function putUser( req: Request,
-                               res: Response ): Promise<void> {
+                               res: Response,
+                               next: Function ): Promise<void> {
   try {
     if ( !await checkAuth( req, res ) ) return
     const { username, password } = req.body;
     if ( !username || !password ) {
-      sendJSON( res, 400, { message: '❌ Invalid Username Or Password' } );
-      return;
+      const error: apiError = new Error( 'Invalid Username Or Password' );
+      error.status = 400;
+      return next( error );
     }
     const id = parseInt( req.params.id as string, 10 )
     await updateUser( id, username, password );
-    sendJSON( res, 200, { message: `✅ Changes username and password` } )
+    res.status( 200 ).json( { message: `Changes username and password` } )
   } catch ( error ) {
-    sendJSON( res, 500, { message: `❌ Database error while updating at users` } )
+    next( error );
   }
 }
 
