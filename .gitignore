@@ -22,3 +22,5 @@
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+/../../../../../prisma
